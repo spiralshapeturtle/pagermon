@@ -20,8 +20,8 @@ The server is responsible for storing messages in a database, providing a real-t
 ### Installation
 1. Navigate to the server directory: `cd server`
 2. Install dependencies: `npm install`
-3. Copy the example config: `cp config/default.json config/config.json`
-4. Start the server: `npm start` (or use PM2 for production)
+3. Use default config as base: `cp config/default.json config/config.json`
+4. Start the server: `npm start` (or use PM2, see below)
 
 ### Features
 - **Real-time Web UI:** View incoming messages as they arrive.

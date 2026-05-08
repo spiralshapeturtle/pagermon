@@ -1,5 +1,6 @@
 # PagerMon Client - .gitignore
 node_modules/
+.vscode/
 config/config.json
 logs/
 *.log

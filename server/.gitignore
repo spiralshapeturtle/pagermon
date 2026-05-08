@@ -1,5 +1,6 @@
 # PagerMon Server - .gitignore
 node_modules/
+.vscode/
 config/config.json
 config/backup.json
 config/vacuum_state.json

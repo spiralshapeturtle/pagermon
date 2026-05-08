@@ -1,0 +1,6 @@
+# Root .gitignore
+node_modules/
+.vscode/
+*.tar.gz
+*.zip
+.DS_Store
