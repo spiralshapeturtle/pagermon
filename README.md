@@ -64,6 +64,39 @@ This repository is configured with `.gitignore` to prevent sensitive information
 
 ---
 
+## Running with PM2 (Recommended for Beginners)
+
+PM2 is a process manager that ensures PagerMon starts automatically when your computer/Pi boots and restarts if it crashes.
+
+### 1. Install PM2
+```bash
+sudo npm install -g pm2
+```
+
+### 2. Start the Server
+Go to the server directory and start it:
+```bash
+cd server
+pm2 start app.js --name "pagermon-server"
+```
+
+### 3. Start the Client
+Go to the client directory and start the monitoring script:
+```bash
+cd client
+pm2 start reader_monitoring.sh --name "pagermon-client"
+```
+
+### 4. Make it permanent
+To make sure everything starts after a reboot:
+```bash
+pm2 save
+pm2 startup
+```
+(Follow the instructions on your screen after running `pm2 startup`).
+
+---
+
 ## Standard Webhook Format
 
 PagerMon supports sending data via Webhooks. The standard output format is:
@@ -98,5 +131,16 @@ Some scripts (like `reader_monitoring.sh` or `pagermon.config.js`) might contain
 - **Never commit your `config.json`** to a public repository.
 - The `.gitignore` file is pre-configured to exclude databases and sensitive configurations.
 - Default admin password is set via `config/default.json`. Change it immediately after login.
+
+---
+
+## Credits & Acknowledgements
+
+This project is a fork and consolidation of the original PagerMon project. We would like to extend a huge thank you to the **original PagerMon creators and contributors** (Dave McKenzie and many others) for their incredible work in building the foundation of this paging solution.
+
+This version has been enhanced with:
+- **Alpine.js** frontend modernization.
+- **FLEX Group Calling** optimizations for the Dutch P2000 network.
+- Consolidated **Client & Server** repository structure.
 
 ---
