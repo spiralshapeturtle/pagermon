@@ -1,0 +1,6 @@
+# PagerMon Client - .gitignore
+node_modules/
+config/config.json
+logs/
+*.log
+pagermon.config.js

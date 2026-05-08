@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include ('../global/header') -%>
+</head>
+<body id="admin-body">
+  <%- include ('../global/menu') -%>
+  <div id="content" class="container" x-data="statsComponent()">
+    <div class="loading" x-show="loading" x-cloak><i class="fa fa-spinner fa-spin"></i></div>
+    <div class="row" style="padding-top: 10px;">
+      <div class="col-12">
+        <h4 style="padding-left: 15px;"><a href="/admin/">Admin</a> / Statistics</h4>
+        <hr />
+      </div>
+    </div>
+
+    <!-- Rij 1: basisstatistieken -->
+    <div class="row" style="padding: 0 15px 8px;">
+      <div class="col-6 col-sm-3">
+        <div class="stats-card">
+          <div class="stats-number" x-text="stats.total_messages ? stats.total_messages.toLocaleString() : '-'"></div>
+          <div class="stats-label">Totaal berichten</div>
+        </div>
+      </div>
+      <div class="col-6 col-sm-3">
+        <div class="stats-card">
+          <div class="stats-number" x-text="stats.messages_24h != null ? (+stats.messages_24h).toLocaleString() : '-'"></div>
+          <div class="stats-label">Laatste 24 uur</div>
+        </div>
+      </div>
+      <div class="col-6 col-sm-3">
+        <div class="stats-card">
+          <div class="stats-number" x-text="stats.messages_7d != null ? (+stats.messages_7d).toLocaleString() : '-'"></div>
+          <div class="stats-label">Laatste 7 dagen</div>
+        </div>
+      </div>
+      <div class="col-6 col-sm-3">
+        <div class="stats-card">
+          <div class="stats-number" x-text="stats.total_capcodes != null ? (+stats.total_capcodes).toLocaleString() : '-'"></div>
+          <div class="stats-label">Actieve capcodes</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rij 2: 31-daagse statistieken -->
+    <div class="row" style="padding: 0 15px 16px;">
+      <div class="col-6 col-sm-3">
+        <div class="stats-card">
+          <div class="stats-number" x-text="stats.messages_31d != null ? (+stats.messages_31d).toLocaleString() : '-'"></div>
+          <div class="stats-label">Laatste 31 dagen</div>
+        </div>
+      </div>
+      <div class="col-6 col-sm-3">
+        <div class="stats-card" x-show="busiestDay">
+          <div class="stats-number" x-text="busiestDay ? (+busiestDay.count).toLocaleString() : '-'"></div>
+          <div class="stats-sublabel" x-text="busiestDay ? formatDay(busiestDay.day) : ''"></div>
+          <div class="stats-label">Drukste dag</div>
+        </div>
+      </div>
+      <div class="col-6 col-sm-3">
+        <div class="stats-card">
+          <div class="stats-number" x-text="avgPerDay ? avgPerDay.toLocaleString() : '-'"></div>
+          <div class="stats-label">Gemiddeld / dag (31d)</div>
+        </div>
+      </div>
+      <div class="col-6 col-sm-3">
+        <div class="stats-card" x-show="weekTrend !== null">
+          <div class="stats-number"
+               :class="weekTrend > 5 ? 'stats-trend-up' : weekTrend < -5 ? 'stats-trend-down' : 'stats-trend-flat'"
+               x-text="weekTrend > 0 ? '+' + weekTrend + '%' : weekTrend + '%'"></div>
+          <div class="stats-label">Week-over-week</div>
+        </div>
+        <div class="stats-card" x-show="weekTrend === null && !loading">
+          <div class="stats-number stats-trend-flat">—</div>
+          <div class="stats-label">Week-over-week</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rij 3: uurlijkse grafiek + systeem status -->
+    <div class="row" style="padding: 0 15px 16px;">
+      <div class="col-sm-8">
+        <div class="stats-panel">
+          <div class="stats-panel-title"><i class="fas fa-chart-bar"></i> Berichten per uur (laatste 24u)</div>
+          <div x-show="stats.hourly && stats.hourly.length">
+            <template x-for="h in (stats.hourly || [])" :key="h.hour">
+              <div class="stats-bar-row">
+                <span class="stats-bar-label" x-text="padHour(h.hour)"></span>
+                <div class="stats-bar-track">
+                  <div class="stats-bar-fill" :style="'width:' + barWidth(h.count) + '%'"></div>
+                </div>
+                <span class="stats-bar-count" x-text="(+h.count).toLocaleString()"></span>
+              </div>
+            </template>
+          </div>
+          <div x-show="!stats.hourly || !stats.hourly.length" style="color: var(--text-muted); font-size:13px; padding: 12px 0;">
+            Geen data beschikbaar (alleen SQLite).
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-4">
+        <div class="stats-panel" x-show="status">
+          <div class="stats-panel-title"><i class="fa fa-server"></i> Systeemstatus</div>
+          <table class="stats-info-table">
+            <tr><td>Uptime</td><td x-text="formatUptime(status && status.uptime)"></td></tr>
+            <tr><td>Node.js</td><td x-text="status && status.node_version"></td></tr>
+            <tr><td>Versie</td><td x-text="status && status.version"></td></tr>
+            <tr><td>DB grootte</td><td x-text="formatBytes(status && status.db_size_bytes)"></td></tr>
+            <tr><td>Berichten</td><td x-text="status && status.total_messages ? (+status.total_messages).toLocaleString() : '-'"></td></tr>
+            <tr><td>Capcodes</td><td x-text="status && status.total_capcodes ? (+status.total_capcodes).toLocaleString() : '-'"></td></tr>
+            <tr><td>Servertijd</td><td x-text="formatServerTime(status && status.server_time)"></td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rij 4: 31-daagse daggrafiek -->
+    <div class="row" style="padding: 0 15px 16px;">
+      <div class="col-12">
+        <div class="stats-panel">
+          <div class="stats-panel-title">
+            <i class="fas fa-chart-bar"></i> Berichten per dag (laatste 31 dagen)
+            <span x-show="busiestDay" class="stats-busiest-legend">
+              <span class="stats-legend-dot" style="background:rgba(248,113,113,0.85);"></span> drukste dag
+            </span>
+          </div>
+          <div style="position:relative; height:240px;">
+            <canvas id="dailyChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rij 5: dag-van-de-week + top capcodes -->
+    <div class="row" style="padding: 0 15px 16px;">
+      <div class="col-sm-5">
+        <div class="stats-panel">
+          <div class="stats-panel-title"><i class="fas fa-calendar-week"></i> Gem. berichten per weekdag (31d)</div>
+          <div x-show="stats.dow && stats.dow.length">
+            <template x-for="d in (stats.dow || [])" :key="d.dow">
+              <div class="stats-bar-row">
+                <span class="stats-bar-label stats-dow-label" x-text="dowName(d.dow)"></span>
+                <div class="stats-bar-track">
+                  <div class="stats-bar-fill stats-bar-fill-dow" :style="'width:' + dowWidth(dowAvg(d.dow, d.count)) + '%'"></div>
+                </div>
+                <span class="stats-bar-count" x-text="dowAvg(d.dow, d.count).toLocaleString()"></span>
+              </div>
+            </template>
+          </div>
+          <div x-show="!stats.dow || !stats.dow.length" style="color: var(--text-muted); font-size:13px; padding:12px 0;">
+            Geen data beschikbaar (alleen SQLite).
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-7">
+        <div class="stats-panel">
+          <div class="stats-panel-title"><i class="fas fa-broadcast-tower"></i> Meest actieve capcodes (31d)</div>
+          <div x-show="stats.top_capcodes && stats.top_capcodes.length">
+            <template x-for="cap in (stats.top_capcodes || [])" :key="cap.address">
+              <div class="stats-top-cap-row">
+                <div class="stats-top-cap-info">
+                  <a :href="'/?address=' + encodeURIComponent(cap.address) + '%25'" class="stats-top-cap-name">
+                    <i x-show="cap.icon" class="fa" :class="'fa-' + (cap.icon || '')"></i>
+                    <span x-text="cap.alias || cap.address"></span>
+                  </a>
+                  <span x-show="cap.agency" class="stats-top-cap-agency" x-text="cap.agency"></span>
+                </div>
+                <div class="stats-top-cap-bar-wrap">
+                  <div class="stats-bar-track" style="height:6px;">
+                    <div class="stats-bar-fill" :style="'width:' + Math.round(+cap.count / +(stats.top_capcodes[0] && stats.top_capcodes[0].count || 1) * 100) + '%'"></div>
+                  </div>
+                </div>
+                <span class="stats-top-cap-count" x-text="(+cap.count).toLocaleString()"></span>
+              </div>
+            </template>
+          </div>
+          <div x-show="!stats.top_capcodes || !stats.top_capcodes.length" style="color: var(--text-muted); font-size:13px; padding:12px 0;">
+            Geen aliased capcodes gevonden in de afgelopen 31 dagen.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script defer src="/javascripts/admin/admin.js?v=6"></script>
+  <%- include ('../global/footer') -%>
+</body>
+</html>

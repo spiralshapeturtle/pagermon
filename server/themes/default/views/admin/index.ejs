@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include ('../global/header') -%>
+</head>
+<body id="admin-body">
+  <%- include ('../global/menu') -%>
+  <div id="content" class="container">
+    <div class="row" style="padding-top: 11px;"></div>
+    <div class="row" style="padding-top: 10px;">
+      <div class="col-12">
+        <h4 style="padding-left: 15px;"><a href="/admin/">Admin</a></h4>
+        <hr />
+        <div class="d-none d-sm-flex gap-2">
+          <a href="/admin/aliases" class="btn btn-secondary btn-lg flex-fill"><i class="fa fa-fw fa-address-card fa-3x float-start"> </i>Aliases<br /><br /><div class="btn-subtext"><i>Manage capcode aliases</i></div></a>
+          <a href="/admin/users" class="btn btn-secondary btn-lg flex-fill"><i class="fa fa-fw fa-user fa-3x float-start"> </i>Users<br /><br /><div class="btn-subtext"><i>Manage users</i></div></a>
+          <a href="/admin/stats" class="btn btn-secondary btn-lg flex-fill"><i class="fas fa-fw fa-chart-bar fa-3x float-start"> </i>Statistics<br /><br /><div class="btn-subtext"><i>Messages &amp; system</i></div></a>
+        </div>
+        <div class="btn-group btn-group-vertical d-flex d-sm-none flex-column">
+          <a href="/admin/aliases" class="btn btn-secondary btn-lg"><i class="fa fa-fw fa-address-card fa-2x float-start"> </i>Aliases<br /><div class="btn-subtext"><i>Manage capcode aliases</i></div></a>
+          <a href="/admin/users" class="btn btn-secondary btn-lg"><i class="fa fa-fw fa-user fa-2x float-start"> </i>Users<br /><div class="btn-subtext"><i>Manage users</i></div></a>
+          <a href="/admin/stats" class="btn btn-secondary btn-lg"><i class="fas fa-fw fa-chart-bar fa-2x float-start"> </i>Statistics<br /><div class="btn-subtext"><i>Messages &amp; system</i></div></a>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-12">
+        <div class="d-none d-sm-flex gap-2" style="padding-top: 15px">
+          <a href="/admin/settings" class="btn btn-secondary btn-lg flex-fill"><i class="fa fa-fw fa-cogs fa-3x float-start"> </i>Settings<br /><br /><div class="btn-subtext"><i>Configure system settings</i></div></a>
+          <a href="/admin/logs" class="btn btn-secondary btn-lg flex-fill"><i class="fa fa-fw fa-book fa-3x float-start"> </i>Logs<br /><br /><div class="btn-subtext"><i>View Log Files</i></div></a>
+          <a href="https://github.com/pagermon/pagermon#support" class="btn btn-secondary btn-lg flex-fill" target="_blank"><i class="fa fa-fw fa-life-ring fa-3x float-start"> </i>Help<br /><br /><div class="btn-subtext"><i>Documentation and support</i></div></a>
+        </div>
+        <div class="btn-group btn-group-vertical d-flex d-sm-none flex-column">
+          <a href="/admin/settings" class="btn btn-secondary btn-lg"><i class="fa fa-fw fa-cogs fa-2x float-start"> </i>Settings<br /><div class="btn-subtext"><i>Configure system settings</i></div></a>
+          <a href="/admin/logs" class="btn btn-secondary btn-lg"><i class="fa fa-fw fa-book fa-2x float-start"> </i>Logs<br /><div class="btn-subtext"><i>View Log Files</i></div></a>
+          <a href="https://github.com/pagermon/pagermon#support" class="btn btn-secondary btn-lg" target="_blank"><i class="fa fa-fw fa-life-ring fa-2x float-start"> </i>Help<br /><div class="btn-subtext"><i>Documentation and support</i></div></a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <%- include ('../global/footer') -%>
+</body>
+</html>

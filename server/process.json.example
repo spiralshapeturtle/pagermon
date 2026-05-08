@@ -1,0 +1,26 @@
+{
+  "name"             : "pagermon",
+  "cwd"              : "./",
+  "script"           : "app.js",
+  "node_args"        : ["--harmony"],
+  "error_file"       : "logs/node-app.stderr.log",
+  "out_file"         : "logs/node-app.stdout.log",
+  "pid_file"         : "pids/node-geo-api.pid",
+  "instances"        : 1,
+  "min_uptime"       : "200s",
+  "max_restarts"     : 10,
+  "max_memory_restart": "512M",
+  "cron_restart"     : "",
+  "watch"            : false,
+  "ignore_watch"      : ["[\\/\\\\]\\./", "node_modules", "config", "logs"],
+  "merge_logs"       : true,
+  "exec_interpreter" : "node",
+  "autorestart"      : true, // enable/disable automatic restart when an app crashes or exits
+  "vizion"           : false, // enable/disable vizion features (versioning control)
+  "env": {
+    "NODE_ENV": "production",
+    "HOSTNAME": "",
+    "USE_COOKIE_HOST": false,
+    "APP_NAME": "pagermon"
+  }
+}

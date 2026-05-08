@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include ('../global/header') -%>
+</head>
+<body id="admin-body">
+  <%- include ('../global/menu') -%>
+  <div id="content" class="container" x-data="registerComponent()">
+    <div class="loading" x-show="loading" x-cloak><i class="fa fa-spinner fa-spin"></i></div>
+    <div class="alert alert-dismissible alert-fixed fade show"
+         :class="message ? message.type : ''"
+         x-show="!!message"
+         x-cloak>
+      <button type="button" class="btn-close" @click="message = null" aria-label="Close"></button>
+      <strong x-text="message ? message.text : ''"></strong>
+    </div>
+    <div class="row" style="padding-top: 10px">
+      <div class="col-sm-6 col-12">
+        <h4 style="padding-left: 15px;">Registration</h4>
+        <div class="col-12">
+          <hr />
+          <form @submit.prevent="registerSubmit()" name="user">
+            <h5>User Details</h5>
+            <div class="form-group" :class="!user.username || existingUsername ? 'has-error' : 'has-success'">
+              <label for="reg-username" class="col-4 col-sm-3 form-label col-form-label">Username</label>
+              <div class="col-8 col-sm-9">
+                <input class="form-control" type="text" id="reg-username" x-model="user.username" @blur="checkUsername()" required>
+                <span x-show="userLoading" class="fas fa-sync fa-spin fa-2x fa-fw ms-2" x-cloak aria-hidden="true"></span>
+                <span class="form-text">Minimum Length - 6 Characters</span>
+                <span x-show="existingUsername" class="text-danger float-start" x-cloak>Username already exists! </span>
+              </div>
+            </div>
+            <div class="form-group" :class="!user.givenname ? 'has-error' : 'has-success'">
+              <label for="reg-givenname" class="col-4 col-sm-3 form-label col-form-label">Given Name</label>
+              <div class="col-8 col-sm-9">
+                <input class="form-control" type="text" id="reg-givenname" x-model="user.givenname" required>
+                <span class="form-text">Required</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="reg-surname" class="col-4 col-sm-3 form-label col-form-label">Surname</label>
+              <div class="col-8 col-sm-9">
+                <input class="form-control" type="text" id="reg-surname" x-model="user.surname">
+              </div>
+            </div>
+            <div class="form-group" :class="!user.email || existingEmail ? 'has-error' : 'has-success'">
+              <label for="reg-email" class="col-4 col-sm-3 form-label col-form-label">Email Address</label>
+              <div class="col-8 col-sm-9">
+                <input class="form-control" type="email" id="reg-email" x-model="user.email" @blur="checkEmail()" required>
+                <span x-show="userLoading" class="fas fa-sync fa-spin fa-2x fa-fw ms-2" x-cloak aria-hidden="true"></span>
+                <span class="form-text">Required</span>
+                <span x-show="existingEmail" class="text-danger float-start" x-cloak>Email already exists! </span>
+              </div>
+            </div>
+            <div class="form-group" :class="!user.password ? 'has-error' : 'has-success'">
+              <label for="reg-password" class="col-4 col-sm-3 form-label col-form-label">Password</label>
+              <div class="col-8 col-sm-9">
+                <input class="form-control" type="password" id="reg-password" x-model="user.password" minlength="6" required>
+                <span class="form-text">Password must be at least 6 characters</span>
+              </div>
+            </div>
+            <div class="btn-group-vertical" id="buttons-register">
+              <button type="submit" class="btn btn-success" :disabled="loading || existingUsername || existingEmail">Save</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script defer src="/javascripts/auth.js?v=2"></script>
+  <%- include ('../global/footer') -%>
+</body>
+</html>

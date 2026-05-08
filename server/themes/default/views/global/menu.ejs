@@ -1,0 +1,91 @@
+<nav class="navbar navbar-expand fixed-top">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/"><%= monitorName || 'PagerMon' %></a>
+    <span id="socket-disconnected-icon" class="d-none" title="Disconnected — reconnecting…" style="line-height:1;align-self:center;padding-left:0.25rem;">
+      <i class="fas fa-fw fa-unlink" style="color:rgba(255,193,7,0.85);font-size:0.8rem;"></i>
+    </span>
+    <div id="myNavbar">
+      <ul class="navbar-nav ms-auto">
+        <% if (login) { %>
+          <li class="nav-item dropdown">
+            <a role="button" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="fa fa-fw fa-user"></i> <%= user.username %>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <% if (user.role == 'admin') { %>
+              <li><h6 class="dropdown-header"><i class="fa fa-fw fa-lock"></i> Admin</h6></li>
+              <li><a class="dropdown-item" href="/admin/aliases"><i class="fa fa-fw fa-address-card"></i> Aliases</a></li>
+              <li><a class="dropdown-item" href="/admin/users"><i class="fa fa-fw fa-user"></i> Users</a></li>
+              <li><a class="dropdown-item" href="/admin/stats"><i class="fas fa-fw fa-chart-bar"></i> Statistics</a></li>
+              <li><a class="dropdown-item" href="/admin/settings"><i class="fa fa-fw fa-cogs"></i> Settings</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <% } %>
+              <li><button type="button" class="dropdown-item" onclick="toggleTheme();">
+                <i class="far fa-fw fa-sun theme-icon-dark"></i><i class="far fa-fw fa-moon theme-icon-light"></i> Toggle Theme
+              </button></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="/auth/profile"><i class="fa fa-fw fa-cogs"></i> My Profile</a></li>
+              <li><a class="dropdown-item" href="/auth/reset"><i class="fa fa-fw fa-key"></i> Reset Password</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="/auth/logout"><i class="fas fa-fw fa-sign-out-alt"></i> Sign Out</a></li>
+            </ul>
+          </li>
+        <% } else { %>
+
+          <li class="nav-item"><a class="nav-link" href="/auth/login"><i class="fas fa-fw fa-sign-in-alt"></i> Sign In</a></li>
+        <% } %>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<script>
+    function setThemeColor(isLight) {
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', isLight ? '#1a2535' : '#0e1525');
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('#admin-body a').forEach(function(link) {
+            if (link.textContent.indexOf('Admin') > -1) link.parentElement.classList.add('active');
+        });
+        var isLight = document.documentElement.classList.contains('light-theme');
+        setThemeColor(isLight);
+
+        var pdwMatch = document.cookie.match(/(?:^|;\s*)pdwMode=([^;]*)/);
+        if (!pdwMatch || pdwMatch[1] !== 'off') {
+            document.documentElement.classList.add('pdw-mode');
+        }
+
+        var sneakpeekMatch = document.cookie.match(/(?:^|;\s*)sneakpeek=([^;]*)/);
+        if (sneakpeekMatch && sneakpeekMatch[1] === 'on') {
+            document.documentElement.classList.add('sneakpeek-mode');
+        }
+    });
+
+    function toggleTheme() {
+        var isLight = document.documentElement.classList.toggle('light-theme');
+        var exp = new Date();
+        exp.setDate(exp.getDate() + 365);
+        document.cookie = 'theme=' + (isLight ? 'light' : 'dark') + '; expires=' + exp.toUTCString() + '; path=/';
+        setThemeColor(isLight);
+    }
+
+    function togglePdwMode() {
+        var isOn = document.documentElement.classList.toggle('pdw-mode');
+        var exp = new Date();
+        exp.setDate(exp.getDate() + 365);
+        document.cookie = 'pdwMode=' + (isOn ? 'on' : 'off') + '; expires=' + exp.toUTCString() + '; path=/';
+        window.dispatchEvent(new CustomEvent('pdwModeChange', { detail: { active: isOn } }));
+    }
+
+    function toggleSneakpeek() {
+        var isOn = document.documentElement.classList.toggle('sneakpeek-mode');
+        var exp = new Date();
+        exp.setDate(exp.getDate() + 365);
+        document.cookie = 'sneakpeek=' + (isOn ? 'on' : 'off') + '; expires=' + exp.toUTCString() + '; path=/';
+        window.dispatchEvent(new CustomEvent('sneakpeekChange', { detail: { active: isOn } }));
+    }
+</script>
+
+<div id="wrap">

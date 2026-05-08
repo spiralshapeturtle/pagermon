@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include ('global/header') -%>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js" integrity="sha512-zoJXRvW2gC8Z0Xo3lBbao5+AS3g6YWr5ztKqaicua11xHo+AvE1b0lT9ODgrHTmNUxeCw0Ry4BGRYZfXu70weg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<% if (frontPopupEnable) { %>
+  <div class="modal fade" tabindex="-1" aria-labelledby="myLargeModalLabel" aria-modal="true" id="discModal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4 class="modal-title"><i class="fa fa-exclamation-circle"></i><%= frontPopupTitle %></h4>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+        <%- frontPopupContent %>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary ok" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!document.cookie.split(';').some(function(c){ return c.trim().startsWith('modal_cookie='); })) {
+        document.body.appendChild(document.getElementById('discModal'));
+        window.setTimeout(function() {
+          bootstrap.Modal.getOrCreateInstance(document.getElementById('discModal')).show();
+        }, 3000);
+      }
+      document.querySelectorAll('.ok').forEach(function(el) {
+        el.addEventListener('click', function() {
+          var exp = new Date(); exp.setDate(exp.getDate() + 183);
+          document.cookie = 'modal_cookie=true; expires=' + exp.toUTCString() + '; path=/';
+        });
+      });
+    });
+  </script>
+  <% } %>
+</head>
+
+<body id="home-body">
+
+<%- include ('global/menu.ejs') -%>
+
+<div id="content" class="container-fluid" x-data="messageComponent()" x-cloak>
+  <div x-show="loading" class="loading"><i class="fa fa-spinner fa-spin"></i></div>
+  <div class="row">
+    <div class="messages-card">
+    <table class="table table-sm valign">
+      <thead>
+        <tr>
+          <th class="unified-header-th">
+            <div class="unified-header">
+              <!-- LEFT: Brand + nav icons -->
+              <div class="header-left">
+                <a class="header-brand" href="/"><%=monitorName || 'PagerMon'%></a>
+                <span id="live-clock" class="live-clock" title="Current time"></span>
+              </div>
+              <!-- RIGHT: Toolbar + user -->
+              <div class="header-right">
+                <form action="/" method="get" class="header-search-form" x-show="searchOpen || hasQuery" @submit="submitSearch($event)">
+                  <div class="input-group input-group-sm">
+                    <input type="text" class="form-control" name="q" placeholder="Search…" x-model="query">
+                    <button type="submit" class="btn btn-default btn-sm" title="Search"><i class="fa fa-fw fa-search"></i></button>
+                    <a x-show="hasQuery" href="/" class="btn btn-default btn-sm" title="Clear search"><i class="fa fa-fw fa-times"></i></a>
+                  </div>
+                </form>
+                <span x-show="filter || hasQuery" class="filter-badge-wrap">
+                  <a href="/" class="btn btn-primary btn-sm" x-text="filterString || origQuery">filter</a>
+                  <a href="/" class="btn btn-primary btn-sm ms-1"><i class="fa fa-fw fa-times"></i></a>
+                </span>
+                <div class="btn-group">
+                  <button type="button" class="btn btn-default btn-sm" @click="updateData()" title="Refresh"><i class="fas fa-sync" :class="spinner"></i></button>
+                  <% if (!login) { %><button type="button" id="sneakpeek-btn" class="btn btn-default btn-sm" onclick="toggleSneakpeek(); return false;" title="Show all (incl. national codes)"><i class="fa fa-fw fa-globe"></i></button><% } %>
+                  <button type="button" class="btn btn-default btn-sm d-none d-sm-inline-flex" @click="openStats()" title="Statistics"><i class="fas fa-chart-bar"></i></button>
+                  <button type="button" class="btn btn-default btn-sm d-none d-sm-inline-flex" onclick="toggleTheme(); return false;" title="Toggle theme"><i class="far fa-fw fa-sun theme-icon-dark"></i><i class="far fa-fw fa-moon theme-icon-light"></i></button>
+                  <button type="button" x-show="notificationSupport" class="btn btn-default btn-sm" :class="{active: notificationEnabled === 'true'}" @click="toggleNotifications()" title="Browser notifications"><i class="fa fa-bell"></i></button>
+                  <button type="button" class="btn btn-default btn-sm" :class="{active: soundEnabled}" @click="toggleSound()" title="Sound alert on new message"><i class="fa fa-volume-up"></i></button>
+                  <button type="button" class="btn btn-default btn-sm d-none d-sm-inline-flex" :class="{active: timeRelative}" @click="toggleTimeMode()" title="Relative time (e.g. '5 min ago')"><i class="far fa-clock"></i></button>
+                  <button type="button" class="btn btn-default btn-sm" @click="searchOpen = !searchOpen" :class="{active: searchOpen || hasQuery}" title="Search"><i class="fa fa-search"></i></button>
+                  <span class="dropdown d-none d-sm-inline-block">
+                    <button class="btn btn-default btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" title="Message limit" x-text="pager.limit"></button>
+                    <ul class="dropdown-menu dropdown-menu-end" role="menu">
+                      <li :class="{disabled:pager.limit == 10}"><button type="button" class="dropdown-item" @click="setCookie('messageLimit', 10)">10</button></li>
+                      <li :class="{disabled:pager.limit == 20}"><button type="button" class="dropdown-item" @click="setCookie('messageLimit', 20)">20</button></li>
+                      <li :class="{disabled:pager.limit == 50}"><button type="button" class="dropdown-item" @click="setCookie('messageLimit', 50)">50</button></li>
+                      <li :class="{disabled:pager.limit == 100}"><button type="button" class="dropdown-item" @click="setCookie('messageLimit', 100)">100</button></li>
+                    </ul>
+                  </span>
+                  <!-- Overflow menu: only visible on mobile -->
+                  <span class="dropdown d-inline-block d-sm-none">
+                    <button class="btn btn-default btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" title="More options"><i class="fa fa-ellipsis-h"></i></button>
+                    <ul class="dropdown-menu dropdown-menu-end" role="menu">
+                      <li><button type="button" class="dropdown-item" onclick="toggleTheme();"><i class="far fa-fw fa-sun theme-icon-dark"></i><i class="far fa-fw fa-moon theme-icon-light"></i> Toggle theme</button></li>
+                      <li><button type="button" class="dropdown-item" @click="openStats()"><i class="fas fa-fw fa-chart-bar"></i> Statistics</button></li>
+                      <li :class="{'overflow-active': timeRelative}"><button type="button" class="dropdown-item" @click="toggleTimeMode()"><i class="far fa-fw fa-clock"></i> Relative time</button></li>
+                      <li><hr class="dropdown-divider"></li>
+                      <li class="dropdown-header">Messages per page</li>
+                      <li :class="{active:pager.limit == 10}"><button type="button" class="dropdown-item" @click="setCookie('messageLimit', 10)">10</button></li>
+                      <li :class="{active:pager.limit == 20}"><button type="button" class="dropdown-item" @click="setCookie('messageLimit', 20)">20</button></li>
+                      <li :class="{active:pager.limit == 50}"><button type="button" class="dropdown-item" @click="setCookie('messageLimit', 50)">50</button></li>
+                      <li :class="{active:pager.limit == 100}"><button type="button" class="dropdown-item" @click="setCookie('messageLimit', 100)">100</button></li>
+                    </ul>
+                  </span>
+                </div>
+                <% if (login) { %>
+                <div class="dropdown">
+                  <button type="button" class="btn btn-default btn-sm dropdown-toggle" data-bs-toggle="dropdown" title="<%=user.username%>">
+                    <i class="fa fa-fw fa-user"></i><span class="d-none d-xxl-inline"> <%=user.username%></span>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <% if (user.role == 'admin') { %>
+                    <li><h6 class="dropdown-header"><i class="fa fa-fw fa-lock"></i> Admin</h6></li>
+                    <li><a class="dropdown-item" href="/admin/aliases"><i class="fa fa-fw fa-address-card"></i> Aliases</a></li>
+                    <li><a class="dropdown-item" href="/admin/users"><i class="fa fa-fw fa-user"></i> Users</a></li>
+                    <li><a class="dropdown-item" href="/admin/stats"><i class="fas fa-fw fa-chart-bar"></i> Statistics</a></li>
+                    <li><a class="dropdown-item" href="/admin/settings"><i class="fa fa-fw fa-cogs"></i> Settings</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <% } %>
+                    <li><a class="dropdown-item" href="/auth/profile"><i class="fa fa-fw fa-cogs"></i> My Profile</a></li>
+                    <li><a class="dropdown-item" href="/auth/reset"><i class="fa fa-fw fa-key"></i> Reset Password</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="/auth/logout"><i class="fas fa-fw fa-sign-out-alt"></i> Sign Out</a></li>
+                  </ul>
+                </div>
+                <% } else { %>
+
+                <a href="/auth/login" class="header-icon-btn" title="Sign in"><i class="fas fa-fw fa-sign-in-alt"></i></a>
+                <% } %>
+              </div>
+            </div>
+          </th>
+        </tr>
+      </thead>
+      <template x-for="message in messages" :key="message.id">
+        <tbody>
+          <tr>
+            <td class="expand">
+              <div class="msg-meta-line">
+                <span x-show="!timeRelative"><span class="msg-time-inline" x-text="message.time"></span><span class="msg-date-inline"> &middot; <span x-text="message.date"></span></span></span>
+                <span x-show="timeRelative" class="msg-time-inline" :title="message.date + ' ' + message.time" x-text="relativeTime(message.timestamp)"></span>
+                <a @click.prevent="openMaps(message, $event)" href="" title="Open in Google Maps" class="maps-link">
+                  <i class="fa fa-fw" :class="mapsLoading[message.id] ? 'fa-circle-notch fa-spin' : 'fa-map-marker'"></i>
+                </a>
+                <a @click.prevent="copyMessage(message, $event)" href="" title="Copy message" class="maps-link">
+                  <i class="fa fa-fw" :class="copyFeedback[message.id] ? 'fa-check copy-ok' : 'fa-clipboard'"></i>
+                </a>
+              </div>
+              <div x-html="applyHighlight(message.message, pager.replaceText)" class="pagerMessage"></div>
+              <div x-show="message.capcodes && message.capcodes.length >= 1" class="flex-group-capcodes">
+                <template x-for="cap in message.capcodes" :key="cap.id">
+                  <div class="flex-capcode-row">
+                    <a :href="aliasFilterUrl(cap)" class="flex-capcode-badge"
+                       :title="cap.alias || ''"
+                       :style="'background-color:' + (cap.color || '#2a3347') + ';color:' + badgeTextColor(cap.color) + ';text-decoration:none'">
+                      <i x-show="cap.icon" class="fa" :class="'fa-' + (cap.icon || '')"></i>
+                      <span class="flex-cap-address" x-text="noLeadingZeros(cap.address)"></span><span x-show="cap.alias" class="flex-cap-alias"> &mdash; <span x-text="cap.alias"></span></span>
+                    </a>
+                  </div>
+                </template>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </template>
+    </table>
+    </div><!-- /.messages-card -->
+  </div>
+  <div class="row" x-show="messages.length == 0 && !loading">
+    <div class="col-sm-8 offset-sm-2" style="text-align: center; vertical-align: middle;">
+      <h4>No messages found!</h4>
+      <div x-show="hasQuery"><p>Consider broadening your search terms and try again.</p></div>
+      <div x-show="!hasQuery"><p>Have you loaded any message data yet?</p>
+        <p>If you believe you reached this message by error, <a href="https://github.com/pagermon/pagermon/issues" target="_blank">log an issue.</a></p>
+      </div>
+    </div>
+  </div>
+  <%- include ('global/pagination') -%>
+
+  <!-- Stats modal -->
+  <div class="modal fade" id="statsModal" tabindex="-1" aria-labelledby="statsModalLabel" aria-modal="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content stats-modal-content">
+        <div class="modal-header">
+          <h4 class="modal-title"><i class="fas fa-chart-bar"></i> Statistics</h4>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div x-show="statsLoading" style="text-align:center; padding:30px 0;"><i class="fa fa-spinner fa-spin fa-2x"></i></div>
+          <div x-show="!statsLoading && stats">
+
+            <!-- Rij 1: basiskaarten -->
+            <div class="stats-modal-cards" style="margin-bottom:8px;">
+              <div class="stats-modal-card">
+                <div class="stats-number" x-text="stats && stats.total_messages != null ? (+stats.total_messages).toLocaleString() : ''"></div>
+                <div class="stats-label">Totaal</div>
+              </div>
+              <div class="stats-modal-card">
+                <div class="stats-number" x-text="stats && stats.messages_24h != null ? (+stats.messages_24h).toLocaleString() : ''"></div>
+                <div class="stats-label">Laatste 24u</div>
+              </div>
+              <div class="stats-modal-card">
+                <div class="stats-number" x-text="stats && stats.messages_7d != null ? (+stats.messages_7d).toLocaleString() : ''"></div>
+                <div class="stats-label">Laatste 7d</div>
+              </div>
+              <div class="stats-modal-card">
+                <div class="stats-number" x-text="stats && stats.total_capcodes != null ? (+stats.total_capcodes).toLocaleString() : ''"></div>
+                <div class="stats-label">Capcodes</div>
+              </div>
+            </div>
+
+            <!-- Rij 2: 31-daagse kaarten -->
+            <div class="stats-modal-cards" style="margin-bottom:16px;">
+              <div class="stats-modal-card">
+                <div class="stats-number" x-text="stats && stats.messages_31d != null ? (+stats.messages_31d).toLocaleString() : ''"></div>
+                <div class="stats-label">Laatste 31d</div>
+              </div>
+              <div class="stats-modal-card">
+                <div class="stats-number" x-text="statsGetBusiestDay() ? (+statsGetBusiestDay().count).toLocaleString() : '-'"></div>
+                <div class="stats-sublabel" x-text="statsGetBusiestDay() ? statsFormatDay(statsGetBusiestDay().day) : ''"></div>
+                <div class="stats-label">Drukste dag</div>
+              </div>
+              <div class="stats-modal-card">
+                <div class="stats-number" x-text="statsGetAvgPerDay() != null ? statsGetAvgPerDay().toLocaleString() : '-'"></div>
+                <div class="stats-label">Gem. / dag</div>
+              </div>
+              <div class="stats-modal-card">
+                <div class="stats-number"
+                     :class="statsGetWeekTrend() > 5 ? 'stats-trend-up' : statsGetWeekTrend() < -5 ? 'stats-trend-down' : 'stats-trend-flat'"
+                     x-text="statsGetWeekTrend() !== null ? (statsGetWeekTrend() > 0 ? '+' + statsGetWeekTrend() + '%' : statsGetWeekTrend() + '%') : '—'"></div>
+                <div class="stats-label">Week-over-week</div>
+              </div>
+            </div>
+
+            <!-- Rij 3: Uurlijks + dag-van-de-week naast elkaar -->
+            <div class="row g-3" style="margin-bottom:16px;">
+              <div class="col-12 col-md-7">
+                <div class="stats-panel mb-0">
+                  <div class="stats-panel-title"><i class="fas fa-clock"></i> Per uur (laatste 24u)</div>
+                  <div x-show="stats && stats.hourly && stats.hourly.length">
+                    <template x-for="h in (stats ? stats.hourly || [] : [])" :key="h.hour">
+                      <div class="stats-bar-row">
+                        <span class="stats-bar-label" x-text="statsPadHour(h.hour)"></span>
+                        <div class="stats-bar-track"><div class="stats-bar-fill" :style="'width:' + statsBarWidth(h.count) + '%'"></div></div>
+                        <span class="stats-bar-count" x-text="(+h.count).toLocaleString()"></span>
+                      </div>
+                    </template>
+                  </div>
+                  <div x-show="!stats || !stats.hourly || !stats.hourly.length" class="stats-nodata">Geen data (alleen SQLite).</div>
+                </div>
+              </div>
+              <div class="col-12 col-md-5">
+                <div class="stats-panel mb-0">
+                  <div class="stats-panel-title"><i class="fas fa-calendar-week"></i> Gem. berichten per weekdag (31d)</div>
+                  <div x-show="stats && stats.dow && stats.dow.length">
+                    <template x-for="d in (stats ? stats.dow || [] : [])" :key="d.dow">
+                      <div class="stats-bar-row">
+                        <span class="stats-bar-label stats-dow-label" x-text="statsDowName(d.dow)"></span>
+                        <div class="stats-bar-track"><div class="stats-bar-fill stats-bar-fill-dow" :style="'width:' + statsDowWidth(d.dow, d.count) + '%'"></div></div>
+                        <span class="stats-bar-count" x-text="statsDowAvg(d.dow, d.count).toLocaleString()"></span>
+                      </div>
+                    </template>
+                  </div>
+                  <div x-show="!stats || !stats.dow || !stats.dow.length" class="stats-nodata">Geen data (alleen SQLite).</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Rij 4: 31-daagse grafiek -->
+            <div style="margin-bottom:16px;">
+              <div class="stats-panel-title">
+                <i class="fas fa-chart-bar"></i> Per dag (laatste 31 dagen)
+                <span x-show="statsGetBusiestDay()" class="stats-busiest-legend">
+                  <span class="stats-legend-dot" style="background:rgba(248,113,113,0.85);"></span> drukste dag
+                </span>
+              </div>
+              <div style="position:relative; height:180px;">
+                <canvas id="statsModalDailyChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Rij 5: Top 5 actieve capcodes -->
+            <div x-show="stats && stats.top_capcodes && stats.top_capcodes.length">
+              <div class="stats-panel-title"><i class="fas fa-broadcast-tower"></i> Meest actief (31d)</div>
+              <template x-for="cap in (stats ? stats.top_capcodes || [] : [])" :key="cap.address">
+                <div class="stats-top-cap-row">
+                  <div class="stats-top-cap-info">
+                    <a :href="'/?address=' + encodeURIComponent(cap.address) + '%25'" class="stats-top-cap-name" @click="bootstrap.Modal.getInstance(document.getElementById('statsModal')).hide()">
+                      <i x-show="cap.icon" class="fa" :class="'fa-' + (cap.icon || '')"></i>
+                      <span x-text="cap.alias || cap.address"></span>
+                    </a>
+                    <span x-show="cap.agency" class="stats-top-cap-agency" x-text="cap.agency"></span>
+                  </div>
+                  <div class="stats-top-cap-bar-wrap">
+                    <div class="stats-bar-track" style="height:6px;">
+                      <div class="stats-bar-fill" :style="'width:' + Math.round(+cap.count / +(stats.top_capcodes[0] && stats.top_capcodes[0].count || 1) * 100) + '%'"></div>
+                    </div>
+                  </div>
+                  <span class="stats-top-cap-count" x-text="(+cap.count).toLocaleString()"></span>
+                </div>
+              </template>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // Server-side config injected for pagermon-app.js
+  window.PAGERMON_CONFIG = {
+    user:        <% if(typeof user != 'undefined'){ %>"<%=user.username%>"<% }else{ %>null<% } %>,
+    role:        <% if(typeof user != 'undefined'){ %>"<%=user.role%>"<% }else{ %>"anonymous"<% } %>,
+    apisecurity: <%- apisecurity ? 'true' : 'false' %>,
+    login:       <%- login ? 'true' : 'false' %>
+  };
+  </script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script defer src="/javascripts/pagermon-app.js?v=27"></script>
+  <script>
+  (function() {
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function tick() {
+      var d = new Date();
+      var el = document.getElementById('live-clock');
+      if (el) el.textContent = pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+    }
+    tick();
+    var _clockTimer = setInterval(tick, 1000);
+    // Stop de klok wanneer de pagina niet meer zichtbaar is om CPU te sparen
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden) {
+        clearInterval(_clockTimer);
+        _clockTimer = null;
+      } else if (!_clockTimer) {
+        tick();
+        _clockTimer = setInterval(tick, 1000);
+      }
+    });
+  })();
+  </script>
+  <script>
+  (function() {
+    var activeTooltip = null;
+
+    function initBadge(badge) {
+      if (badge._ttInit) return;
+      var fullText = badge.getAttribute('title') || '';
+      if (!fullText) return;
+      badge._ttInit = true;
+
+      var tt = new bootstrap.Tooltip(badge, {
+        trigger: 'hover focus',
+        title: fullText,
+        placement: 'top',
+        html: false
+      });
+
+      // Sla handler-referenties op op het element zelf zodat ze later
+      // via removeEventListener verwijderd kunnen worden (fix memory leak #2)
+      badge._touchHandler = function() {
+        badge._wasTouched = true;
+      };
+      badge._clickHandler = function(e) {
+        if (!badge._wasTouched) return; // desktop click → navigate normally
+        badge._wasTouched = false;
+        e.preventDefault();
+        if (activeTooltip && activeTooltip !== tt) {
+          activeTooltip.hide();
+          activeTooltip = null;
+        }
+        if (activeTooltip === tt) {
+          tt.hide();
+          activeTooltip = null;
+        } else {
+          tt.show();
+          activeTooltip = tt;
+        }
+      };
+
+      badge.addEventListener('touchstart', badge._touchHandler, { passive: true });
+      badge.addEventListener('click', badge._clickHandler);
+    }
+
+    // Dismiss active tooltip when tapping outside any badge
+    document.addEventListener('touchstart', _docTouchHandler, { passive: true });
+
+    // Sla referentie op zodat de listener verwijderd kan worden
+    var _docTouchHandler = function(e) {
+      if (activeTooltip && !e.target.closest('.flex-capcode-badge')) {
+        activeTooltip.hide();
+        activeTooltip = null;
+      }
+    };
+
+    // Watch for badges added/removed by Alpine x-for
+    var observer = new MutationObserver(function(mutations) {
+      mutations.forEach(function(m) {
+        m.addedNodes.forEach(function(node) {
+          if (node.nodeType !== 1) return;
+          if (node.classList && node.classList.contains('flex-capcode-badge')) {
+            initBadge(node);
+          } else if (node.querySelectorAll) {
+            node.querySelectorAll('.flex-capcode-badge').forEach(initBadge);
+          }
+        });
+        m.removedNodes.forEach(function(node) {
+          if (node.nodeType !== 1) return;
+          var badges = [];
+          if (node.classList && node.classList.contains('flex-capcode-badge')) {
+            badges.push(node);
+          } else if (node.querySelectorAll) {
+            node.querySelectorAll('.flex-capcode-badge').forEach(function(b) { badges.push(b); });
+          }
+          badges.forEach(function(b) {
+            // Verwijder opgeslagen event listeners om memory leak te voorkomen
+            if (b._touchHandler) { b.removeEventListener('touchstart', b._touchHandler); b._touchHandler = null; }
+            if (b._clickHandler) { b.removeEventListener('click', b._clickHandler); b._clickHandler = null; }
+            var tt = bootstrap.Tooltip.getInstance(b);
+            if (tt) tt.dispose();
+            if (activeTooltip && activeTooltip._element === b) activeTooltip = null;
+          });
+        });
+      });
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+      observer.observe(document.getElementById('content') || document.body, {
+        childList: true,
+        subtree: true
+      });
+      // Cleanup bij navigatie weg van de pagina (pagehide is betrouwbaarder dan unload)
+      window.addEventListener('pagehide', function() {
+        observer.disconnect();
+        document.removeEventListener('touchstart', _docTouchHandler);
+      }, { once: true });
+    });
+  })();
+  </script>
+
+</div>
+
+<%- include ('global/footer') -%>

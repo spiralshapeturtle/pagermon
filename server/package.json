@@ -1,0 +1,69 @@
+{
+  "name": "pagermon",
+  "version": "1.0.0",
+  "private": true,
+  "license": "Unlicense",
+  "scripts": {
+    "start": "node ./bin/www",
+    "test": "nyc --reporter=lcov mocha --exit -t 60000",
+    "test-text": "nyc mocha --exit -t 60000",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "dependencies": {
+    "async": "^3.2.6",
+    "axios": "^1.5.0",
+    "bcryptjs": "^2.4.3",
+    "colornames": "latest",
+    "compression": "^1.6.2",
+    "connect-flash": "^0.1.1",
+    "connect-sqlite3": "^0.9.9",
+    "cron": "^1.7.0",
+    "cron-validator": "^1.2.1",
+    "debug": "~2.6.3",
+    "discord.js": "^14.0.0",
+    "ejs": "^3.1.9",
+    "express": "^4.18.2",
+    "express-rate-limit": "^8.3.1",
+    "express-session": "^1.15.3",
+    "helmet": "^8.1.0",
+    "json-2-csv": "^3.6.2",
+    "knex": "^2.5.1",
+    "lodash": "^4.17.21",
+    "moment": "^2.26.0",
+    "morgan": "~1.10.0",
+    "mqtt": "^4.3.7",
+    "mysql2": "^3.20.0",
+    "nconf": "^0.12.0",
+    "node-prowl": "latest",
+    "nodemailer": "latest",
+    "passport": "^0.6.0",
+    "passport-local": "^1.0.0",
+    "passport-localapikey-update": "^0.5.0",
+    "pushover-notifications": "latest",
+    "serve-favicon": "~2.4.2",
+    "slack": "latest",
+    "socket.io": "^4.7.2",
+    "sqlite3": "^6.0.1",
+    "telegram-bot-api": "^2.0.1",
+    "web-push": "^3.6.7",
+    "winston": "^3.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pagermon/pagermon.git"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "chai": "^4.3.9",
+    "chai-http": "^4.4.0",
+    "eslint": "^9.0.0",
+    "mocha": "^10.2.0",
+    "nyc": "^15.1.0",
+    "passport-stub": "^1.1.1",
+    "prettier": "^1.16.4"
+  },
+  "optionalDependencies": {
+    "oracledb": "^4.2.0"
+  }
+}

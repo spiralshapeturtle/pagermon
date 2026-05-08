@@ -1,0 +1,12 @@
+{
+  "apikey": "YOUR_API_KEY_HERE",
+  "hostname": "http://YOUR_PAGERMON_SERVER:3000",
+  "identifier": "FLEX",
+  "sendFunctionCode": false,
+  "useTimestamp": true,
+  "EAS": {
+    "excludeEvents": [],
+    "includeFIPS": [],
+    "addressAddType": true
+  }
+}

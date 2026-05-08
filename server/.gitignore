@@ -1,0 +1,14 @@
+# PagerMon Server - .gitignore
+node_modules/
+config/config.json
+config/backup.json
+config/vacuum_state.json
+messages.db*
+sessions/
+pids/
+logs/
+process.json
+coverage/
+.nyc_output/
+.env
+.claude/

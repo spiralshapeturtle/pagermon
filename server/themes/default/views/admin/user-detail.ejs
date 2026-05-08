@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include ('../global/header') -%>
+</head>
+<body id="admin-body">
+  <%- include ('../global/menu') -%>
+  <div id="content" class="container" x-data="userDetailComponent()">
+    <div class="loading" x-show="loading" x-cloak><i class="fa fa-spinner fa-spin"></i></div>
+    <div class="alert alert-dismissible alert-fixed fade show"
+         :class="message ? message.type : ''"
+         x-show="!!message" x-cloak>
+      <button type="button" class="btn-close" @click="message = null" aria-label="Close"></button>
+      <strong x-text="message ? message.text : ''"></strong>
+    </div>
+    <div class="row" style="padding-top: 10px">
+      <div class="col-sm-6 col-12">
+        <h4 style="padding-left: 15px;"><a href="/admin/">Admin</a> / <a href="/admin/users">Users</a> / <span x-text="user.username || 'New'"></span></h4>
+        <div class="col-12">
+          <hr />
+          <form @submit.prevent="userSubmit()">
+            <h5>User Details</h5>
+            <div class="form-group" :class="!user.username || existingUsername ? 'has-error' : 'has-success'">
+              <label class="col-4 col-sm-3 form-label col-form-label">Username</label>
+              <div class="col-8 col-sm-9">
+                <input class="form-control" type="text" x-model="user.username" @blur="checkUsername()" required>
+                <span x-show="userLoading" class="fas fa-sync fa-spin fa-2x fa-fw ms-2" x-cloak></span>
+                <span class="form-text">Required</span>
+                <span x-show="existingUsername" class="text-danger float-start" x-cloak>Username already exists! </span>
+              </div>
+            </div>
+            <div class="form-group" :class="!user.givenname ? 'has-error' : 'has-success'">
+              <label class="col-4 col-sm-3 form-label col-form-label">Given Name</label>
+              <div class="col-8 col-sm-9">
+                <input class="form-control" type="text" x-model="user.givenname" required>
+                <span class="form-text">Required</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="col-4 col-sm-3 form-label col-form-label">Surname</label>
+              <div class="col-8 col-sm-9">
+                <input class="form-control" type="text" x-model="user.surname">
+              </div>
+            </div>
+            <div class="form-group" :class="!user.email || existingEmail ? 'has-error' : 'has-success'">
+              <label class="col-4 col-sm-3 form-label col-form-label">Email Address</label>
+              <div class="col-8 col-sm-9">
+                <input class="form-control" type="email" x-model="user.email" @blur="checkEmail()" required>
+                <span x-show="userLoading" class="fas fa-sync fa-spin fa-2x fa-fw ms-2" x-cloak></span>
+                <span class="form-text">Required</span>
+                <span x-show="existingEmail" class="text-danger float-start" x-cloak>Email already exists! </span>
+              </div>
+            </div>
+            <div class="form-group" x-show="isNew">
+              <label class="col-4 col-sm-3 form-label col-form-label">Password</label>
+              <div class="col-8 col-sm-9">
+                <input class="form-control" type="password" x-model="user.password" :required="isNew">
+                <span class="form-text">Required</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="col-4 col-sm-3 form-label col-form-label">User Role</label>
+              <div class="col-8 col-sm-9">
+                <select x-model="user.role" class="form-select">
+                  <option value="user">User</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="col-4 col-sm-3 form-label col-form-label">User Status</label>
+              <div class="col-8 col-sm-9">
+                <select x-model="user.status" class="form-select">
+                  <option value="active">Active</option>
+                  <option value="disabled">Disabled</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group" x-show="!isNew">
+              <label class="col-4 col-sm-3 form-label col-form-label">Last Logon Date</label>
+              <div class="col-8 col-sm-9">
+                <input class="form-control" type="text" x-model="user.lastlogondate" readonly>
+                <span class="form-text">Last Logon Date for user</span>
+              </div>
+            </div>
+            <div class="btn-group-vertical" id="buttons-userDetail">
+              <button type="button" x-show="!isNew" @click="openDeleteModal()" class="btn btn-danger">Delete</button>
+              <button type="button" x-show="!isNew" @click="openResetModal()" class="btn btn-warning">Reset Password</button>
+              <button type="submit" class="btn btn-success" :disabled="loading">Save</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete confirmation modal -->
+    <div class="modal fade" id="deleteUserModal" tabindex="-1" aria-modal="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header"><h5 class="modal-title">Delete User</h5></div>
+          <div class="modal-body"><p>Are you sure you want to delete this user?</p><p>Users cannot be restored after deletion.</p></div>
+          <div class="modal-footer">
+            <button class="btn btn-danger" @click="userDeleteConfirmed()">OK</button>
+            <button class="btn btn-primary" data-bs-dismiss="modal">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Password reset modal -->
+    <div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-modal="true" x-data="{ newpassword: '', confirmPassword: '', get passwordsMatch() { return !this.confirmPassword || this.newpassword === this.confirmPassword; } }">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header"><h5 class="modal-title">Password Reset</h5></div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label>Password:</label>
+              <input type="password" class="form-control" x-model="newpassword" required>
+            </div>
+            <div class="form-group">
+              <label>Confirm Password:</label>
+              <input type="password" class="form-control" x-model="confirmPassword" required>
+              <span class="text-danger" x-show="confirmPassword && !passwordsMatch" x-cloak>Passwords do not match!</span>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-primary" :disabled="!passwordsMatch || !newpassword" @click="$dispatch('user-reset-confirmed', {password: newpassword}); bootstrap.Modal.getInstance($el.closest('.modal')).hide();">OK</button>
+            <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script defer src="/javascripts/admin/admin.js?v=5"></script>
+  <%- include ('../global/footer') -%>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include ('../global/header') -%>
+</head>
+<body id="admin-body">
+  <%- include ('../global/menu') -%>
+  <div id="content" class="container" x-data="usersComponent()">
+    <div class="loading" x-show="loading" x-cloak><i class="fa fa-spinner fa-spin"></i></div>
+    <div class="alert alert-dismissible alert-fixed fade show"
+         :class="message ? message.type : ''"
+         x-show="!!message" x-cloak>
+      <button type="button" class="btn-close" @click="message = null" aria-label="Close"></button>
+      <strong x-text="message ? message.text : ''"></strong>
+    </div>
+    <div class="row" style="padding-top: 10px">
+      <div class="col-sm-6 col-12">
+        <h4 style="padding-left: 15px;"><a href="/admin/">Admin</a> / Users</h4>
+        <div class="col-12">
+          <hr />
+          <div class="input-group">
+            <span class="input-group-text"><i class="fa fa-filter"></i></span>
+            <input id="search" type="text" class="form-control" name="search" placeholder="Filter" x-model="search">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-12">
+        <p></p>
+        <table class="table table-sm table-hover table-striped valign">
+          <thead>
+            <tr>
+              <th></th>
+              <th style="text-align: center;">ID</th>
+              <th style="text-align: center;">Username</th>
+              <th style="text-align: center;">Given Name</th>
+              <th style="text-align: center;">Surname</th>
+              <th style="text-align: center;">Email</th>
+              <th style="text-align: center;">Role</th>
+              <th style="text-align: center;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="user in filteredUsers()" :key="user.id">
+              <tr>
+                <td class="shrink" style="vertical-align: middle;"><input type="checkbox" x-model="user.selected" /></td>
+                <td class="shrink clickable-td" @click="userDetail(user.id)"><span class="alias-mono" x-text="user.id"></span></td>
+                <td class="shrink clickable-td" @click="userDetail(user.id)"><span class="alias-mono" x-text="user.username"></span></td>
+                <td class="shrink clickable-td" @click="userDetail(user.id)" x-text="user.givenname"></td>
+                <td class="shrink clickable-td" @click="userDetail(user.id)" x-text="user.surname"></td>
+                <td class="shrink clickable-td" @click="userDetail(user.id)" x-text="user.email"></td>
+                <td class="shrink clickable-td" @click="userDetail(user.id)"><span class="alias-mono" x-text="user.role"></span></td>
+                <td class="shrink clickable-td" @click="userDetail(user.id)"><span class="alias-mono" x-text="user.status"></span></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="btn-group-vertical" id="buttons-management">
+      <button type="button" :disabled="!userSelected()" @click="openDeleteModal()" class="btn btn-danger">Delete Selected</button>
+      <button type="button" @click="userDetail('new')" class="btn btn-success">Add New</button>
+    </div>
+
+    <!-- Delete confirmation modal -->
+    <div class="modal fade" id="deleteUsersModal" tabindex="-1" aria-modal="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header"><h5 class="modal-title">Delete Users</h5></div>
+          <div class="modal-body">
+            <p>Are you sure you want to delete these users?</p>
+            <p>Users cannot be restored after saving.</p>
+            <p><strong><span x-text="userSelected()"></span> users selected for deletion.</strong></p>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-danger" @click="userDeleteConfirmed()">OK</button>
+            <button class="btn btn-primary" data-bs-dismiss="modal">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script defer src="/javascripts/admin/admin.js?v=5"></script>
+  <%- include ('../global/footer') -%>
+</body>
+</html>

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include ('../global/header') -%>
+</head>
+<body id="admin-body">
+  <%- include ('../global/menu') -%>
+  <div id="content" class="container" x-data="aliasDetailComponent()">
+    <!-- FontAwesome Helper Modal -->
+    <style>.faHelperBlock{display:inline-block;text-align:center;width:60px;padding:10px 0;height:60px;border-radius:10px;cursor:pointer}.faHelperBlock:hover{background-color:#ffffe0}.faHelperIcon{font-size:24pt}</style>
+    <div class="modal fade" id="faHelperModal" tabindex="-1" aria-modal="true">
+      <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+          <div class="modal-header" style="padding: 5px 15px;">
+            <span style="font-size:20px;" class="modal-title">Select Alias Icon:</span>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="input-group">
+              <span class="input-group-text"><i class="fa fa-filter"></i></span>
+              <input id="faSearch" type="text" class="form-control" placeholder="Filter" x-model="faSearch">
+            </div>
+          </div>
+          <div class="modal-body" style="overflow-y: auto;height: calc(100vh - 215px);" id="faHelperBody">
+            <template x-for="faIcon in (faSearch ? faIcons.filter(i => i.includes(faSearch.toLowerCase())) : faIcons.slice(0, 80))" :key="faIcon">
+              <div class="faHelperBlock" :title="faIcon" @click="alias.icon = faIcon; bootstrap.Modal.getInstance(document.getElementById('faHelperModal')).hide();" @mouseover="document.getElementById('faPreview').innerText = faIcon" @mouseleave="document.getElementById('faPreview').innerText = ''">
+                <i class="faHelperIcon fas" :class="'fa-' + faIcon"></i>
+              </div>
+            </template>
+            <div x-show="!faSearch" class="text-muted small p-2" style="width:100%;text-align:center">Showing first 80 — type to search all icons</div>
+          </div>
+          <div class="modal-footer">
+            <span id="faPreview" style="font-size:16px;padding-right: 15px;" class="modal-title"></span>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alias Template Modal -->
+    <style>.aliasTemplateBlock{display:inline-block;text-align:center;width:60px;padding:10px 0;height:60px;border-radius:10px;cursor:pointer}.aliasTemplateBlock:hover{background-color:#ffffe0}</style>
+    <div class="modal fade" id="aliasTemplateModal" tabindex="-1" aria-modal="true">
+      <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header" style="padding: 5px 15px;">
+            <span style="font-size:20px;" class="modal-title">Select Alias Template:</span>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="input-group">
+              <span class="input-group-text"><i class="fa fa-filter"></i></span>
+              <input type="text" class="form-control" placeholder="Filter" x-model="templateSearch">
+            </div>
+          </div>
+          <div class="modal-body" style="overflow-y: auto;height: calc(100vh - 215px);padding-top: 0px;">
+            <table class="table table-sm table-hover table-striped valign">
+              <thead>
+                <tr>
+                  <th style="text-align: center;">Color</th>
+                  <th style="text-align: center;">Icon</th>
+                  <th style="text-align: center;">Agency</th>
+                  <th style="text-align: center;">Filter</th>
+                  <th style="text-align: center;">Name</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="(template, idx) in (settings.aliases && settings.aliases.templates ? settings.aliases.templates.filter(t => !templateSearch || (t.name || '').toLowerCase().includes(templateSearch.toLowerCase()) || (t.agency || '').toLowerCase().includes(templateSearch.toLowerCase())) : [])" :key="idx">
+                  <tr @click="applyTemplate(template)" data-bs-dismiss="modal" style="cursor:pointer;">
+                    <td class="shrink clickable-td" :style="'background-color:' + (template.color || 'transparent')">
+                      <span :style="'color:' + (template.color ? 'white' : 'black')"><strong x-text="template.color"></strong></span>
+                    </td>
+                    <td class="shrink clickable-td">
+                      <span x-show="template.icon" class="fa-stack fa-lg fa-fw" :style="'color:' + (template.color || 'transparent')">
+                        <i class="fa fa-circle fa-stack-2x"></i>
+                        <i class="fa fa-stack-1x fa-inverse" :class="'fa-' + (template.icon || '')"></i>
+                      </span>
+                      <span style="vertical-align: middle;" x-text="template.icon"></span>
+                    </td>
+                    <td class="shrink clickable-td"><strong x-text="template.agency || ''"></strong></td>
+                    <td class="shrink clickable-td">
+                      <i x-show="!template.filter" class="fa fa-circle text-success"></i>
+                      <i x-show="template.filter" class="fa fa-exclamation-circle text-danger"></i>
+                    </td>
+                    <td class="expand clickable-td" x-text="template.name"></td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="loading" x-show="loading" x-cloak><i class="fa fa-spinner fa-spin"></i></div>
+    <div class="alert alert-dismissible alert-fixed fade show"
+         :class="message ? message.type : ''"
+         x-show="!!message" x-cloak>
+      <button type="button" class="btn-close" @click="message = null" aria-label="Close"></button>
+      <strong x-text="message ? message.text : ''"></strong>
+    </div>
+    <div class="row" style="padding-top: 10px">
+      <div class="col-sm-6 col-12">
+        <h4 style="padding-left: 15px;"><a href="/admin/">Admin</a> / <a href="/admin/aliases">Aliases</a> / <span x-text="alias.id || 'New'"></span></h4>
+        <div class="col-12">
+          <hr />
+          <form @submit.prevent="aliasSubmit()">
+            <h5>Alias Details</h5>
+            <p>Aliases are ordered so that the closest match takes precedence.<br />
+            Aliases with a full 7 digit capcode will be used first, followed by those with one wildcard, and so on.<br />
+            Those that start with a wildcard will always be ordered last, and thus are only matched with a message if no other alias matches.</p>
+            <div class="form-group" :class="!alias.address || existingAddress ? 'has-error' : 'has-success'">
+              <label class="col-4 col-sm-3 form-label col-form-label">Address</label>
+              <div class="col-8 col-sm-9">
+                <input class="form-control" type="text" x-model="alias.address" @blur="checkAddress()" required>
+                <span x-show="aliasLoading" class="fas fa-sync fa-spin fa-2x fa-fw ms-2" x-cloak></span>
+                <span class="form-text">Capcode address matches based on SQL wildcards - % means 0 or more of any character, _ means one of any character.</span>
+                <span x-show="existingAddress" class="text-danger float-start" x-cloak>Address already exists! </span>
+                <div x-show="existingAddress" class="btn-group float-end" x-cloak>
+                  <button type="button" @click="newButton(existingID)" class="btn btn-danger">Replace Existing</button>
+                  <button type="button" @click="alias.address = alias.originalAddress; checkAddress()" class="btn btn-danger">Reset<span x-show="alias.originalAddress"> to <span x-text="alias.originalAddress"></span></span></button>
+                </div>
+              </div>
+            </div>
+            <div class="form-group" :class="!alias.agency ? 'has-error' : 'has-success'">
+              <label class="col-4 col-sm-3 form-label col-form-label">Agency</label>
+              <div class="col-8 col-sm-9">
+                <div class="input-group">
+                  <input class="form-control" type="text" id="aliasAgency" x-model="alias.agency" required>
+                  <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#aliasTemplateModal">TEMPLATES</button>
+                </div>
+                <span class="form-text">Agency or a high level group for aliases.</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="col-4 col-sm-3 form-label col-form-label">Icon</label>
+              <div class="col-8 col-sm-9">
+                <div class="input-group">
+                  <span class="input-group-text">
+                    <span class="fa-stack fa-lg fa-fw" :style="'color:' + (alias.color || 'black')">
+                      <i class="fa fa-circle fa-stack-2x"></i>
+                      <i class="fa fa-stack-1x fa-inverse" :class="'fa-' + (alias.icon || 'question')"></i>
+                    </span>
+                  </span>
+                  <input id="aliasIcon" class="form-control" type="text" x-model="alias.icon" required>
+                  <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#faHelperModal">PICK</button>
+                </div>
+                <span class="form-text">Fontawesome icon to display with the alias.</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="col-4 col-sm-3 form-label col-form-label">Color</label>
+              <div class="col-8 col-sm-9">
+                <div class="input-group">
+                  <input type="color" class="form-control form-control-color" x-model="alias.color" style="max-width: 60px;">
+                  <input type="text" class="form-control" x-model="alias.color" placeholder="#000000">
+                </div>
+                <span class="form-text">HTML color to use for the icon and address. Can be a named color or a # color code.</span>
+              </div>
+            </div>
+            <div class="form-group" :class="!alias.alias ? 'has-error' : 'has-success'">
+              <label class="col-4 col-sm-3 form-label col-form-label">Alias</label>
+              <div class="col-8 col-sm-9">
+                <input class="form-control" type="text" id="aliasName" x-model="alias.alias" required>
+                <span class="form-text">Text description of the alias.</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="col-4 col-sm-3 form-label col-form-label">Filter Alias</label>
+              <div class="col-8 col-sm-9">
+                <div class="checkbox">
+                  <label>
+                    <input type="checkbox" id="aliasFilter" :checked="alias.ignore == 1" @change="alias.ignore = $event.target.checked ? 1 : 0">
+                    Ignore messages matching this alias.
+                  </label>
+                  <span class="form-text">New messages that come in matching this alias are not stored in the database, but existing messages will not be deleted.</span>
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="col-4 col-sm-3 form-label col-form-label">Hide Alias</label>
+              <div class="col-8 col-sm-9">
+                <div class="checkbox">
+                  <label>
+                    <input type="checkbox" :checked="alias.onlyShowLoggedIn == 1" @change="alias.onlyShowLoggedIn = $event.target.checked ? 1 : 0">
+                    Show only for logged-in users
+                  </label>
+                  <span class="form-text">Messages for that alias will only be shown to users that are logged in and will be hidden for everyone else.</span>
+                </div>
+              </div>
+            </div>
+
+            <h4>Plugins</h4>
+            <template x-for="plugin in plugins" :key="plugin.name">
+              <div class="plugin-group">
+                <div x-show="settings.plugins && settings.plugins[plugin.name] && settings.plugins[plugin.name].enable">
+                  <hr />
+                  <div class="row">
+                    <div class="col-12 col-sm-6"><h5 x-text="plugin.name"></h5><p><em x-html="plugin.description"></em></p></div>
+                  </div>
+                  <template x-for="configItem in plugin.aliasConfig" :key="configItem.name">
+                    <div class="form-group" x-show="!alias.pluginconf || !alias.pluginconf[plugin.name] || alias.pluginconf[plugin.name].enable || configItem.name === 'enable'">
+                      <label class="col-4 col-sm-3 form-label col-form-label" x-text="configItem.label"></label>
+                      <div class="col-8 col-sm-9">
+                        <div x-show="configItem.type === 'checkbox'" class="checkbox">
+                          <label>
+                            <input type="checkbox" x-show="alias.pluginconf && alias.pluginconf[plugin.name]" :checked="alias.pluginconf && alias.pluginconf[plugin.name] && alias.pluginconf[plugin.name][configItem.name]" @change="if(alias.pluginconf && alias.pluginconf[plugin.name]) alias.pluginconf[plugin.name][configItem.name] = $event.target.checked">
+                            <span x-text="configItem.description"></span>
+                          </label>
+                        </div>
+                        <div x-show="configItem.type === 'select'">
+                          <select class="form-select" x-effect="const _v = alias.pluginconf?.[plugin.name]?.[configItem.name]; $nextTick(() => { $el.value = _v || '' })" @change="alias.pluginconf[plugin.name][configItem.name] = $event.target.value" :disabled="configItem.type !== 'select' || !alias.pluginconf || !alias.pluginconf[plugin.name] || !alias.pluginconf[plugin.name].enable" :required="configItem.type === 'select' && alias.pluginconf && alias.pluginconf[plugin.name] && alias.pluginconf[plugin.name].enable && configItem.required">
+                            <template x-for="opt in configItem.options" :key="opt.value">
+                              <option :value="opt.value" x-text="opt.text"></option>
+                            </template>
+                          </select>
+                          <span class="form-text" x-text="configItem.description"></span>
+                        </div>
+                        <div x-show="configItem.type !== 'checkbox' && configItem.type !== 'select'">
+                          <input :type="configItem.type" class="form-control" :disabled="configItem.type === 'checkbox' || configItem.type === 'select' || !alias.pluginconf || !alias.pluginconf[plugin.name] || !alias.pluginconf[plugin.name].enable" :required="configItem.type !== 'checkbox' && configItem.type !== 'select' && alias.pluginconf && alias.pluginconf[plugin.name] && alias.pluginconf[plugin.name].enable && configItem.required" :value="alias.pluginconf && alias.pluginconf[plugin.name] ? alias.pluginconf[plugin.name][configItem.name] : ''" @input="if(alias.pluginconf && alias.pluginconf[plugin.name]) alias.pluginconf[plugin.name][configItem.name] = $event.target.value">
+                          <span class="form-text" x-text="configItem.description"></span>
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
+
+            <div class="btn-group-vertical" id="buttons-aliasDetail">
+              <button type="button" x-show="!isNew" @click="openDeleteModal()" class="btn btn-danger">Delete</button>
+              <button type="button" @click="aliasLoad()" class="btn btn-warning">Reset</button>
+              <button type="submit" class="btn btn-success" :disabled="loading">Save</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-group-vertical" id="buttons-capcodes">
+      <button x-show="aliasRefreshRequired == 1" type="button" @click="aliasRefresh()" class="btn btn-warning">Refresh Aliases</button>
+      <button x-show="!isNew" type="button" @click="newButton('new')" class="btn btn-success">Add New</button>
+    </div>
+
+    <!-- Delete confirmation modal -->
+    <div class="modal fade" id="deleteAliasModal" tabindex="-1" aria-modal="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header"><h5 class="modal-title">Delete Alias</h5></div>
+          <div class="modal-body"><p>Are you sure you want to delete this alias?</p><p>Aliases cannot be restored after deletion.</p></div>
+          <div class="modal-footer">
+            <button class="btn btn-danger" @click="aliasDeleteConfirmed()">OK</button>
+            <button class="btn btn-primary" data-bs-dismiss="modal">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script defer src="/javascripts/admin/admin.js?v=5"></script>
+  <%- include ('../global/footer') -%>
+</body>
+</html>

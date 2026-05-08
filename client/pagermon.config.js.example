@@ -1,0 +1,7 @@
+export const apps = [{
+    name: "pagermon",
+    script: "./reader_monitoring.sh",
+    error_file: "./logs/pagermon-error.log",
+    out_file: "/dev/null",
+    log_file: "/dev/null"
+}]

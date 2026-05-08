@@ -1,0 +1,35 @@
+  <div class="row">
+      <div class="text-center col-10 offset-1 col-lg-6 offset-lg-3">
+          <!-- pager -->
+          <ul x-show="pager.pageCount" class="pagination">
+              <li class="page-item" :class="{disabled:pager.currentPage === 1}">
+                  <span x-show="pager.currentPage === 1" class="page-link" aria-label="First"><i class="fa fa-angle-double-left"></i></span>
+                  <a x-show="pager.currentPage != 1" class="page-link" @click.prevent="updateData(1)" href="" aria-label="First"><i class="fa fa-angle-double-left"></i></a>
+              </li>
+              <li class="page-item" :class="{disabled:pager.currentPage === 1}">
+                  <span x-show="pager.currentPage === 1" class="page-link" aria-label="Previous"><i class="fa fa-angle-left"></i></span>
+                  <a x-show="pager.currentPage != 1" class="page-link" @click.prevent="updateData(pager.currentPage-1)" href="" aria-label="Previous">
+                    <i class="fa fa-angle-left d-none d-sm-inline"></i><span class="d-inline d-sm-none" x-text="pager.currentPage-1"></span></a>
+              </li>
+              <template x-for="(page, idx) in pager.pages" :key="idx">
+                <li class="page-item d-none d-sm-inline" :class="{active: pager.currentPage === page, disabled: page === null}">
+                    <span x-show="page === null" class="page-link px-2">…</span>
+                    <a x-show="page !== null" class="page-link" @click.prevent="updateData(page)" href="" x-text="page"></a>
+                </li>
+              </template>
+              <li class="page-item active d-inline d-sm-none">
+                  <a class="page-link" @click.prevent="updateData(pager.currentPage)" href="" x-text="pager.currentPage"></a>
+              </li>
+              <li class="page-item" :class="{disabled:pager.currentPage === pager.pageCount}">
+                  <span x-show="pager.currentPage === pager.pageCount" class="page-link"><i class="fa fa-angle-right"></i></span>
+                  <a x-show="pager.currentPage != pager.pageCount" class="page-link" @click.prevent="updateData(pager.currentPage+1)" href="" aria-label="Next">
+                    <i class="fa fa-angle-right d-none d-sm-inline"></i><span class="d-inline d-sm-none" x-text="pager.currentPage+1"></span></a>
+              </li>
+              <li class="page-item" :class="{disabled:pager.currentPage === pager.pageCount}">
+                  <span x-show="pager.currentPage === pager.pageCount" class="page-link" aria-label="Last"><i class="fa fa-angle-double-right"></i></span>
+                  <a x-show="pager.currentPage != pager.pageCount" class="page-link" @click.prevent="updateData(pager.pageCount)" href="" aria-label="Last">
+                    <i class="fa fa-angle-double-right"></i></a>
+              </li>
+          </ul>
+      </div>
+  </div>
