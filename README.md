@@ -1,5 +1,10 @@
 # PagerMon - Full Stack Paging Solution
 
+![PagerMon Desktop](assets/desktop.png)
+*Desktop and Mobile view of the PagerMon interface*
+
+<img src="assets/mobile.png" width="300" alt="PagerMon Mobile">
+
 This repository contains both the **PagerMon Server** and the **PagerMon Client**, providing a complete solution for receiving, processing, and displaying paging messages (POCSAG/FLEX).
 
 ## Project Structure
