@@ -106,12 +106,12 @@
             <p>Aliases are ordered so that the closest match takes precedence.<br />
             Aliases with a full 7 digit capcode will be used first, followed by those with one wildcard, and so on.<br />
             Those that start with a wildcard will always be ordered last, and thus are only matched with a message if no other alias matches.</p>
-            <div class="form-group" :class="!alias.address || existingAddress ? 'has-error' : 'has-success'">
-              <label class="col-4 col-sm-3 form-label col-form-label">Address</label>
+            <div class="row mb-3">
+              <label class="col-4 col-sm-3 col-form-label">Address</label>
               <div class="col-8 col-sm-9">
                 <input class="form-control" type="text" x-model="alias.address" @blur="checkAddress()" required>
                 <span x-show="aliasLoading" class="fas fa-sync fa-spin fa-2x fa-fw ms-2" x-cloak></span>
-                <span class="form-text">Capcode address matches based on SQL wildcards - % means 0 or more of any character, _ means one of any character.</span>
+                <div class="form-text">Capcode address matches based on SQL wildcards - % means 0 or more of any character, _ means one of any character.</div>
                 <span x-show="existingAddress" class="text-danger float-start" x-cloak>Address already exists! </span>
                 <div x-show="existingAddress" class="btn-group float-end" x-cloak>
                   <button type="button" @click="newButton(existingID)" class="btn btn-danger">Replace Existing</button>
@@ -119,18 +119,18 @@
                 </div>
               </div>
             </div>
-            <div class="form-group" :class="!alias.agency ? 'has-error' : 'has-success'">
-              <label class="col-4 col-sm-3 form-label col-form-label">Agency</label>
+            <div class="row mb-3">
+              <label class="col-4 col-sm-3 col-form-label">Agency</label>
               <div class="col-8 col-sm-9">
                 <div class="input-group">
                   <input class="form-control" type="text" id="aliasAgency" x-model="alias.agency" required>
                   <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#aliasTemplateModal">TEMPLATES</button>
                 </div>
-                <span class="form-text">Agency or a high level group for aliases.</span>
+                <div class="form-text">Agency or a high level group for aliases.</div>
               </div>
             </div>
-            <div class="form-group">
-              <label class="col-4 col-sm-3 form-label col-form-label">Icon</label>
+            <div class="row mb-3">
+              <label class="col-4 col-sm-3 col-form-label">Icon</label>
               <div class="col-8 col-sm-9">
                 <div class="input-group">
                   <span class="input-group-text">
@@ -142,48 +142,44 @@
                   <input id="aliasIcon" class="form-control" type="text" x-model="alias.icon" required>
                   <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#faHelperModal">PICK</button>
                 </div>
-                <span class="form-text">Fontawesome icon to display with the alias.</span>
+                <div class="form-text">Fontawesome icon to display with the alias.</div>
               </div>
             </div>
-            <div class="form-group">
-              <label class="col-4 col-sm-3 form-label col-form-label">Color</label>
+            <div class="row mb-3">
+              <label class="col-4 col-sm-3 col-form-label">Color</label>
               <div class="col-8 col-sm-9">
                 <div class="input-group">
                   <input type="color" class="form-control form-control-color" x-model="alias.color" style="max-width: 60px;">
                   <input type="text" class="form-control" x-model="alias.color" placeholder="#000000">
                 </div>
-                <span class="form-text">HTML color to use for the icon and address. Can be a named color or a # color code.</span>
+                <div class="form-text">HTML color to use for the icon and address. Can be a named color or a # color code.</div>
               </div>
             </div>
-            <div class="form-group" :class="!alias.alias ? 'has-error' : 'has-success'">
-              <label class="col-4 col-sm-3 form-label col-form-label">Alias</label>
+            <div class="row mb-3">
+              <label class="col-4 col-sm-3 col-form-label">Alias</label>
               <div class="col-8 col-sm-9">
                 <input class="form-control" type="text" id="aliasName" x-model="alias.alias" required>
-                <span class="form-text">Text description of the alias.</span>
+                <div class="form-text">Text description of the alias.</div>
               </div>
             </div>
-            <div class="form-group">
-              <label class="col-4 col-sm-3 form-label col-form-label">Filter Alias</label>
+            <div class="row mb-3">
+              <label class="col-4 col-sm-3 col-form-label">Filter Alias</label>
               <div class="col-8 col-sm-9">
-                <div class="checkbox">
-                  <label>
-                    <input type="checkbox" id="aliasFilter" :checked="alias.ignore == 1" @change="alias.ignore = $event.target.checked ? 1 : 0">
-                    Ignore messages matching this alias.
-                  </label>
-                  <span class="form-text">New messages that come in matching this alias are not stored in the database, but existing messages will not be deleted.</span>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="aliasFilter" :checked="alias.ignore == 1" @change="alias.ignore = $event.target.checked ? 1 : 0">
+                    <label class="form-check-label" for="aliasFilter">Ignore messages matching this alias.</label>
                 </div>
+                <div class="form-text">New messages that come in matching this alias are not stored in the database, but existing messages will not be deleted.</div>
               </div>
             </div>
-            <div class="form-group">
-              <label class="col-4 col-sm-3 form-label col-form-label">Hide Alias</label>
+            <div class="row mb-3">
+              <label class="col-4 col-sm-3 col-form-label">Hide Alias</label>
               <div class="col-8 col-sm-9">
-                <div class="checkbox">
-                  <label>
-                    <input type="checkbox" :checked="alias.onlyShowLoggedIn == 1" @change="alias.onlyShowLoggedIn = $event.target.checked ? 1 : 0">
-                    Show only for logged-in users
-                  </label>
-                  <span class="form-text">Messages for that alias will only be shown to users that are logged in and will be hidden for everyone else.</span>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="aliasHide" :checked="alias.onlyShowLoggedIn == 1" @change="alias.onlyShowLoggedIn = $event.target.checked ? 1 : 0">
+                    <label class="form-check-label" for="aliasHide">Show only for logged-in users</label>
                 </div>
+                <div class="form-text">Messages for that alias will only be shown to users that are logged in and will be hidden for everyone else.</div>
               </div>
             </div>
 
@@ -196,14 +192,12 @@
                     <div class="col-12 col-sm-6"><h5 x-text="plugin.name"></h5><p><em x-html="plugin.description"></em></p></div>
                   </div>
                   <template x-for="configItem in plugin.aliasConfig" :key="configItem.name">
-                    <div class="form-group" x-show="!alias.pluginconf || !alias.pluginconf[plugin.name] || alias.pluginconf[plugin.name].enable || configItem.name === 'enable'">
-                      <label class="col-4 col-sm-3 form-label col-form-label" x-text="configItem.label"></label>
+                    <div class="row mb-3" x-show="!alias.pluginconf || !alias.pluginconf[plugin.name] || alias.pluginconf[plugin.name].enable || configItem.name === 'enable'">
+                      <label class="col-4 col-sm-3 col-form-label" x-text="configItem.label"></label>
                       <div class="col-8 col-sm-9">
-                        <div x-show="configItem.type === 'checkbox'" class="checkbox">
-                          <label>
-                            <input type="checkbox" x-show="alias.pluginconf && alias.pluginconf[plugin.name]" :checked="alias.pluginconf && alias.pluginconf[plugin.name] && alias.pluginconf[plugin.name][configItem.name]" @change="if(alias.pluginconf && alias.pluginconf[plugin.name]) alias.pluginconf[plugin.name][configItem.name] = $event.target.checked">
-                            <span x-text="configItem.description"></span>
-                          </label>
+                        <div x-show="configItem.type === 'checkbox'" class="form-check">
+                            <input class="form-check-input" type="checkbox" x-show="alias.pluginconf && alias.pluginconf[plugin.name]" :checked="alias.pluginconf && alias.pluginconf[plugin.name] && alias.pluginconf[plugin.name][configItem.name]" @change="if(alias.pluginconf && alias.pluginconf[plugin.name]) alias.pluginconf[plugin.name][configItem.name] = $event.target.checked">
+                            <label class="form-check-label" x-text="configItem.description"></label>
                         </div>
                         <div x-show="configItem.type === 'select'">
                           <select class="form-select" x-effect="const _v = alias.pluginconf?.[plugin.name]?.[configItem.name]; $nextTick(() => { $el.value = _v || '' })" @change="alias.pluginconf[plugin.name][configItem.name] = $event.target.value" :disabled="configItem.type !== 'select' || !alias.pluginconf || !alias.pluginconf[plugin.name] || !alias.pluginconf[plugin.name].enable" :required="configItem.type === 'select' && alias.pluginconf && alias.pluginconf[plugin.name] && alias.pluginconf[plugin.name].enable && configItem.required">
@@ -211,11 +205,11 @@
                               <option :value="opt.value" x-text="opt.text"></option>
                             </template>
                           </select>
-                          <span class="form-text" x-text="configItem.description"></span>
+                          <div class="form-text" x-text="configItem.description"></div>
                         </div>
                         <div x-show="configItem.type !== 'checkbox' && configItem.type !== 'select'">
                           <input :type="configItem.type" class="form-control" :disabled="configItem.type === 'checkbox' || configItem.type === 'select' || !alias.pluginconf || !alias.pluginconf[plugin.name] || !alias.pluginconf[plugin.name].enable" :required="configItem.type !== 'checkbox' && configItem.type !== 'select' && alias.pluginconf && alias.pluginconf[plugin.name] && alias.pluginconf[plugin.name].enable && configItem.required" :value="alias.pluginconf && alias.pluginconf[plugin.name] ? alias.pluginconf[plugin.name][configItem.name] : ''" @input="if(alias.pluginconf && alias.pluginconf[plugin.name]) alias.pluginconf[plugin.name][configItem.name] = $event.target.value">
-                          <span class="form-text" x-text="configItem.description"></span>
+                          <div class="form-text" x-text="configItem.description"></div>
                         </div>
                       </div>
                     </div>

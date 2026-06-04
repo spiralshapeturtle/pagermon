@@ -409,6 +409,7 @@ document.addEventListener('alpine:init', () => {
     importResults: [],
     importResultsTitle: '',
     importResultsMsg: '',
+    bulkUpdate: { enableIgnore: false, ignore: false, enableOnlyShowLoggedIn: false, onlyShowLoggedIn: false },
     _searchTimer: null,
 
     async init() {
@@ -467,11 +468,40 @@ document.addEventListener('alpine:init', () => {
     },
 
     aliasSelected() { return this.aliases.filter(a => a.selected).length; },
+    allSelected() { return this.aliases.length > 0 && this.aliases.every(a => a.selected); },
+    toggleSelectAll(checked) { this.aliases.forEach(a => a.selected = checked); },
     aliasDetail(id) { window.location.href = '/admin/aliases/' + id; },
     aliasMessages(id) { window.location.href = '/?alias=' + id; },
 
     openDeleteModal() {
       bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteAliasesModal')).show();
+    },
+
+    openBulkUpdateModal() {
+      this.bulkUpdate = { enableIgnore: false, ignore: false, enableOnlyShowLoggedIn: false, onlyShowLoggedIn: false };
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('bulkUpdateAliasesModal')).show();
+    },
+
+    async aliasBulkUpdateConfirmed() {
+      bootstrap.Modal.getInstance(document.getElementById('bulkUpdateAliasesModal')).hide();
+      const idList = this.aliases.filter(a => a.selected).map(a => a.id);
+      if (!idList.length) return;
+      const fields = {};
+      if (this.bulkUpdate.enableIgnore) fields.ignore = this.bulkUpdate.ignore ? 1 : 0;
+      if (this.bulkUpdate.enableOnlyShowLoggedIn) fields.onlyShowLoggedIn = this.bulkUpdate.onlyShowLoggedIn ? 1 : 0;
+      if (!Object.keys(fields).length) return;
+      this.loading = true;
+      try {
+        const r = await adminApi('POST', '/api/capcodes/bulkUpdate', { idList, fields });
+        if (r && r.status === 'ok') {
+          showMsg(this, idList.length + ' aliases bijgewerkt!', 'alert-success');
+          this.aliasRefreshRequired = 1;
+          await this.loadAliases();
+        } else {
+          showMsg(this, 'Fout bij bulk update: ' + (r && r.error || ''), 'alert-danger');
+        }
+      } catch(e) { showMsg(this, 'Fout bij bulk update: ' + (e && e.error || e), 'alert-danger'); }
+      this.loading = false;
     },
 
     async aliasDeleteConfirmed() {

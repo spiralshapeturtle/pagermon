@@ -61,25 +61,25 @@
                 <form action="/" method="get" class="header-search-form" x-show="searchOpen || hasQuery" @submit="submitSearch($event)">
                   <div class="input-group input-group-sm">
                     <input type="text" class="form-control" name="q" placeholder="Search…" x-model="query">
-                    <button type="submit" class="btn btn-default btn-sm" title="Search"><i class="fa fa-fw fa-search"></i></button>
-                    <a x-show="hasQuery" href="/" class="btn btn-default btn-sm" title="Clear search"><i class="fa fa-fw fa-times"></i></a>
+                    <button type="submit" class="btn btn-default btn-sm" x-tooltip="'Search'"><i class="fa fa-fw fa-search"></i></button>
+                    <a x-show="hasQuery" href="/" class="btn btn-default btn-sm" x-tooltip="'Clear search'"><i class="fa fa-fw fa-times"></i></a>
                   </div>
                 </form>
                 <span x-show="filter || hasQuery" class="filter-badge-wrap">
-                  <a href="/" class="btn btn-primary btn-sm" x-text="filterString || origQuery">filter</a>
-                  <a href="/" class="btn btn-primary btn-sm ms-1"><i class="fa fa-fw fa-times"></i></a>
+                  <a href="/" class="btn btn-primary btn-sm" x-text="filterString || origQuery" x-tooltip="'Active filter'">filter</a>
+                  <a href="/" class="btn btn-primary btn-sm ms-1" x-tooltip="'Clear filter'"><i class="fa fa-fw fa-times"></i></a>
                 </span>
                 <div class="btn-group">
-                  <button type="button" class="btn btn-default btn-sm" @click="updateData()" title="Refresh"><i class="fas fa-sync" :class="spinner"></i></button>
-                  <% if (!login) { %><button type="button" id="sneakpeek-btn" class="btn btn-default btn-sm" onclick="toggleSneakpeek(); return false;" title="Show all (incl. national codes)"><i class="fa fa-fw fa-globe"></i></button><% } %>
-                  <button type="button" class="btn btn-default btn-sm d-none d-sm-inline-flex" @click="openStats()" title="Statistics"><i class="fas fa-chart-bar"></i></button>
-                  <button type="button" class="btn btn-default btn-sm d-none d-sm-inline-flex" onclick="toggleTheme(); return false;" title="Toggle theme"><i class="far fa-fw fa-sun theme-icon-dark"></i><i class="far fa-fw fa-moon theme-icon-light"></i></button>
-                  <button type="button" x-show="notificationSupport" class="btn btn-default btn-sm" :class="{active: notificationEnabled === 'true'}" @click="toggleNotifications()" title="Browser notifications"><i class="fa fa-bell"></i></button>
-                  <button type="button" class="btn btn-default btn-sm" :class="{active: soundEnabled}" @click="toggleSound()" title="Sound alert on new message"><i class="fa fa-volume-up"></i></button>
-                  <button type="button" class="btn btn-default btn-sm d-none d-sm-inline-flex" :class="{active: timeRelative}" @click="toggleTimeMode()" title="Relative time (e.g. '5 min ago')"><i class="far fa-clock"></i></button>
-                  <button type="button" class="btn btn-default btn-sm" @click="searchOpen = !searchOpen" :class="{active: searchOpen || hasQuery}" title="Search"><i class="fa fa-search"></i></button>
+                  <button type="button" class="btn btn-default btn-sm" @click="updateData()"><i class="fas fa-sync" :class="spinner"></i></button>
+                  <% if (!login) { %><button type="button" id="sneakpeek-btn" class="btn btn-default btn-sm" onclick="toggleSneakpeek(); return false;"><i class="fa fa-fw fa-globe"></i></button><% } %>
+                  <button type="button" class="btn btn-default btn-sm d-none d-sm-inline-flex" @click="openStats()"><i class="fas fa-chart-bar"></i></button>
+                  <button type="button" class="btn btn-default btn-sm d-none d-sm-inline-flex" onclick="toggleTheme(); return false;"><i class="far fa-fw fa-sun theme-icon-dark"></i><i class="far fa-fw fa-moon theme-icon-light"></i></button>
+                  <button type="button" x-show="notificationSupport" class="btn btn-default btn-sm" :class="{active: notificationEnabled === 'true'}" @click="toggleNotifications()"><i class="fa fa-bell"></i></button>
+                  <button type="button" class="btn btn-default btn-sm" :class="{active: soundEnabled}" @click="toggleSound()"><i class="fa fa-volume-up"></i></button>
+                  <button type="button" class="btn btn-default btn-sm d-none d-sm-inline-flex" :class="{active: timeRelative}" @click="toggleTimeMode()"><i class="far fa-clock"></i></button>
+                  <button type="button" class="btn btn-default btn-sm" @click="searchOpen = !searchOpen" :class="{active: searchOpen || hasQuery}"><i class="fa fa-search"></i></button>
                   <span class="dropdown d-none d-sm-inline-block">
-                    <button class="btn btn-default btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" title="Message limit" x-text="pager.limit"></button>
+                    <button class="btn btn-default btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" x-text="pager.limit"></button>
                     <ul class="dropdown-menu dropdown-menu-end" role="menu">
                       <li :class="{disabled:pager.limit == 10}"><button type="button" class="dropdown-item" @click="setCookie('messageLimit', 10)">10</button></li>
                       <li :class="{disabled:pager.limit == 20}"><button type="button" class="dropdown-item" @click="setCookie('messageLimit', 20)">20</button></li>
@@ -89,7 +89,7 @@
                   </span>
                   <!-- Overflow menu: only visible on mobile -->
                   <span class="dropdown d-inline-block d-sm-none">
-                    <button class="btn btn-default btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" title="More options"><i class="fa fa-ellipsis-h"></i></button>
+                    <button class="btn btn-default btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"><i class="fa fa-ellipsis-h"></i></button>
                     <ul class="dropdown-menu dropdown-menu-end" role="menu">
                       <li><button type="button" class="dropdown-item" onclick="toggleTheme();"><i class="far fa-fw fa-sun theme-icon-dark"></i><i class="far fa-fw fa-moon theme-icon-light"></i> Toggle theme</button></li>
                       <li><button type="button" class="dropdown-item" @click="openStats()"><i class="fas fa-fw fa-chart-bar"></i> Statistics</button></li>
@@ -105,7 +105,7 @@
                 </div>
                 <% if (login) { %>
                 <div class="dropdown">
-                  <button type="button" class="btn btn-default btn-sm dropdown-toggle" data-bs-toggle="dropdown" title="<%=user.username%>">
+                  <button type="button" class="btn btn-default btn-sm dropdown-toggle" data-bs-toggle="dropdown" x-tooltip="'User: <%=user.username%>'">
                     <i class="fa fa-fw fa-user"></i><span class="d-none d-xxl-inline"> <%=user.username%></span>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end">
@@ -125,7 +125,7 @@
                 </div>
                 <% } else { %>
 
-                <a href="/auth/login" class="header-icon-btn" title="Sign in"><i class="fas fa-fw fa-sign-in-alt"></i></a>
+                <a href="/auth/login" class="header-icon-btn" x-tooltip="'Sign in'"><i class="fas fa-fw fa-sign-in-alt"></i></a>
                 <% } %>
               </div>
             </div>
@@ -138,11 +138,11 @@
             <td class="expand">
               <div class="msg-meta-line">
                 <span x-show="!timeRelative"><span class="msg-time-inline" x-text="message.time"></span><span class="msg-date-inline"> &middot; <span x-text="message.date"></span></span></span>
-                <span x-show="timeRelative" class="msg-time-inline" :title="message.date + ' ' + message.time" x-text="relativeTime(message.timestamp)"></span>
-                <a @click.prevent="openMaps(message, $event)" href="" title="Open in Google Maps" class="maps-link">
+                <span x-show="timeRelative" class="msg-time-inline" x-tooltip="message.date + ' ' + message.time" x-text="relativeTime(message.timestamp)"></span>
+                <a @click.prevent="openMaps(message, $event)" href="" x-tooltip="'Open in Google Maps'" class="maps-link">
                   <i class="fa fa-fw" :class="mapsLoading[message.id] ? 'fa-circle-notch fa-spin' : 'fa-map-marker'"></i>
                 </a>
-                <a @click.prevent="copyMessage(message, $event)" href="" title="Copy message" class="maps-link">
+                <a @click.prevent="copyMessage(message, $event)" href="" x-tooltip="'Copy message'" class="maps-link">
                   <i class="fa fa-fw" :class="copyFeedback[message.id] ? 'fa-check copy-ok' : 'fa-clipboard'"></i>
                 </a>
               </div>
@@ -151,7 +151,7 @@
                 <template x-for="cap in message.capcodes" :key="cap.id">
                   <div class="flex-capcode-row">
                     <a :href="aliasFilterUrl(cap)" class="flex-capcode-badge"
-                       :title="cap.alias || ''"
+                       x-tooltip="cap.alias || ''"
                        :style="'background-color:' + (cap.color || '#2a3347') + ';color:' + badgeTextColor(cap.color) + ';text-decoration:none'">
                       <i x-show="cap.icon" class="fa" :class="'fa-' + (cap.icon || '')"></i>
                       <span class="flex-cap-address" x-text="noLeadingZeros(cap.address)"></span><span x-show="cap.alias" class="flex-cap-alias"> &mdash; <span x-text="cap.alias"></span></span>
@@ -317,7 +317,7 @@
   };
   </script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <script defer src="/javascripts/pagermon-app.js?v=27"></script>
+  <script defer src="/javascripts/pagermon-app.js?v=28"></script>
   <script>
   (function() {
     function pad(n) { return String(n).padStart(2, '0'); }
@@ -340,105 +340,6 @@
     });
   })();
   </script>
-  <script>
-  (function() {
-    var activeTooltip = null;
-
-    function initBadge(badge) {
-      if (badge._ttInit) return;
-      var fullText = badge.getAttribute('title') || '';
-      if (!fullText) return;
-      badge._ttInit = true;
-
-      var tt = new bootstrap.Tooltip(badge, {
-        trigger: 'hover focus',
-        title: fullText,
-        placement: 'top',
-        html: false
-      });
-
-      // Sla handler-referenties op op het element zelf zodat ze later
-      // via removeEventListener verwijderd kunnen worden (fix memory leak #2)
-      badge._touchHandler = function() {
-        badge._wasTouched = true;
-      };
-      badge._clickHandler = function(e) {
-        if (!badge._wasTouched) return; // desktop click → navigate normally
-        badge._wasTouched = false;
-        e.preventDefault();
-        if (activeTooltip && activeTooltip !== tt) {
-          activeTooltip.hide();
-          activeTooltip = null;
-        }
-        if (activeTooltip === tt) {
-          tt.hide();
-          activeTooltip = null;
-        } else {
-          tt.show();
-          activeTooltip = tt;
-        }
-      };
-
-      badge.addEventListener('touchstart', badge._touchHandler, { passive: true });
-      badge.addEventListener('click', badge._clickHandler);
-    }
-
-    // Dismiss active tooltip when tapping outside any badge
-    document.addEventListener('touchstart', _docTouchHandler, { passive: true });
-
-    // Sla referentie op zodat de listener verwijderd kan worden
-    var _docTouchHandler = function(e) {
-      if (activeTooltip && !e.target.closest('.flex-capcode-badge')) {
-        activeTooltip.hide();
-        activeTooltip = null;
-      }
-    };
-
-    // Watch for badges added/removed by Alpine x-for
-    var observer = new MutationObserver(function(mutations) {
-      mutations.forEach(function(m) {
-        m.addedNodes.forEach(function(node) {
-          if (node.nodeType !== 1) return;
-          if (node.classList && node.classList.contains('flex-capcode-badge')) {
-            initBadge(node);
-          } else if (node.querySelectorAll) {
-            node.querySelectorAll('.flex-capcode-badge').forEach(initBadge);
-          }
-        });
-        m.removedNodes.forEach(function(node) {
-          if (node.nodeType !== 1) return;
-          var badges = [];
-          if (node.classList && node.classList.contains('flex-capcode-badge')) {
-            badges.push(node);
-          } else if (node.querySelectorAll) {
-            node.querySelectorAll('.flex-capcode-badge').forEach(function(b) { badges.push(b); });
-          }
-          badges.forEach(function(b) {
-            // Verwijder opgeslagen event listeners om memory leak te voorkomen
-            if (b._touchHandler) { b.removeEventListener('touchstart', b._touchHandler); b._touchHandler = null; }
-            if (b._clickHandler) { b.removeEventListener('click', b._clickHandler); b._clickHandler = null; }
-            var tt = bootstrap.Tooltip.getInstance(b);
-            if (tt) tt.dispose();
-            if (activeTooltip && activeTooltip._element === b) activeTooltip = null;
-          });
-        });
-      });
-    });
-
-    document.addEventListener('DOMContentLoaded', function() {
-      observer.observe(document.getElementById('content') || document.body, {
-        childList: true,
-        subtree: true
-      });
-      // Cleanup bij navigatie weg van de pagina (pagehide is betrouwbaarder dan unload)
-      window.addEventListener('pagehide', function() {
-        observer.disconnect();
-        document.removeEventListener('touchstart', _docTouchHandler);
-      }, { once: true });
-    });
-  })();
-  </script>
-
 </div>
 
 <%- include ('global/footer') -%>

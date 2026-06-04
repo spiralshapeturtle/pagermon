@@ -1,0 +1,35 @@
+P2000 Theme Colors (Dark Mode)
+Base color: #13151a
+
+Primary Palette:
+----------------
+Page Background:  #13151a
+Header Background: #0c0d10
+Card Background:   #1b1e25
+Surface color:     #282d38 (Updated for contrast)
+Surface Hover:     #363d4d (Updated for contrast)
+Surface Hover 2:   #454d61 (Updated for contrast)
+
+Borders:
+--------
+Default Border:    #2d323d
+Row Border:        #242831
+Button Border:     #2d323d
+Hover Border:      #404757
+
+Text & Highlights:
+------------------
+Primary Text:      #6BBFDB (Blue/Cyan)
+Bright Text:       #D6EEFF
+Highlight Underline: #3b5bdb (Accent Blue)
+
+File Locations of Changes:
+--------------------------
+1. themes/default/public/stylesheets/style.css
+   - Updated :root variables for backgrounds, borders, and highlights.
+   
+2. themes/default/views/global/header.ejs
+   - Updated <meta name="theme-color" content="#13151a">
+   
+3. themes/default/views/global/menu.ejs
+   - Updated setThemeColor() JavaScript function to use #13151a for dark theme.

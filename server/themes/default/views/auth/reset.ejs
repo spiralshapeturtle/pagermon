@@ -19,12 +19,12 @@
         <hr />
         <div class="col-12 offset-md-2 col-md-8">
           <form @submit.prevent="resetSubmit()">
-            <div class="form-group">
-              <label for="new-password">Password:</label>
+            <div class="mb-3">
+              <label for="new-password" class="form-label">Password:</label>
               <input type="password" class="form-control" id="new-password" x-model="password" autofocus required>
             </div>
-            <div class="form-group">
-              <label for="confirm-password">Confirm Password:</label>
+            <div class="mb-3">
+              <label for="confirm-password" class="form-label">Confirm Password:</label>
               <input type="password" class="form-control" id="confirm-password" x-model="confirmPassword" required>
               <span class="text-danger" x-show="confirmPassword && !passwordsMatch" x-cloak>Passwords do not match!</span>
             </div>

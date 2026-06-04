@@ -599,6 +599,10 @@ router.route('/messages')
         } else
           timestamp = 1;
 
+        // Ensure timestamp is always stored as an integer (Unix seconds)
+        timestamp = parseInt(timestamp, 10);
+        if (!Number.isFinite(timestamp) || timestamp <= 0) timestamp = Math.floor(Date.now() / 1000);
+
       // send data to pluginHandler before proceeding
       logger.main.debug('beforeMessage start');
       pluginHandler.handle('message', 'before', data, function (response) {
@@ -1214,6 +1218,32 @@ router.route('/capcodes/:id')
       } else {
         res.status(500).send({ 'status': 'id list contained non-numbers' });
       }
+    } else if (id == 'bulkUpdate') {
+      const idList = req.body.idList || [];
+      const fields = req.body.fields || {};
+      const allowedFields = ['ignore', 'onlyShowLoggedIn'];
+      const updateData = {};
+      allowedFields.forEach(f => { if (f in fields) updateData[f] = fields[f]; });
+      if (!Array.isArray(idList) || idList.some(isNaN) || idList.length === 0) {
+        return res.status(400).send({ status: 'id list invalid or empty' });
+      }
+      if (Object.keys(updateData).length === 0) {
+        return res.status(400).send({ status: 'no valid fields to update' });
+      }
+      logger.main.info('Bulk updating ' + idList.length + ' capcodes: ' + JSON.stringify(updateData));
+      db.from('capcodes')
+        .whereIn('id', idList)
+        .update(updateData)
+        .then(() => {
+          invalidateCapcodeCache();
+          res.status(200).send({ status: 'ok' });
+          if (!updateRequired || updateRequired == 0) {
+            nconf.set('database:aliasRefreshRequired', 1);
+            nconf.save();
+          }
+        }).catch((err) => {
+          res.status(500).json({ error: 'Internal server error' });
+        });
     } else {
       if (req.body.address && req.body.alias) {
         if (id == 'new') {

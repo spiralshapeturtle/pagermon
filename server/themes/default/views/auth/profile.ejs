@@ -20,31 +20,31 @@
           <hr />
           <form @submit.prevent="userSubmit()">
             <h5>User Details</h5>
-            <div class="form-group">
-              <label for="prof-username" class="col-4 col-sm-3 form-label col-form-label">Username</label>
+            <div class="row mb-3">
+              <label for="prof-username" class="col-4 col-sm-3 col-form-label">Username</label>
               <div class="col-8 col-sm-9">
                 <input class="form-control" type="text" id="prof-username" x-model="user.username" disabled>
               </div>
             </div>
-            <div class="form-group" :class="!user.givenname ? 'has-error' : 'has-success'">
-              <label for="prof-givenname" class="col-4 col-sm-3 form-label col-form-label">Given Name</label>
+            <div class="row mb-3">
+              <label for="prof-givenname" class="col-4 col-sm-3 col-form-label">Given Name</label>
               <div class="col-8 col-sm-9">
                 <input class="form-control" type="text" id="prof-givenname" x-model="user.givenname" required>
                 <span class="form-text">Required</span>
               </div>
             </div>
-            <div class="form-group">
-              <label for="prof-surname" class="col-4 col-sm-3 form-label col-form-label">Surname</label>
+            <div class="row mb-3">
+              <label for="prof-surname" class="col-4 col-sm-3 col-form-label">Surname</label>
               <div class="col-8 col-sm-9">
                 <input class="form-control" type="text" id="prof-surname" x-model="user.surname">
               </div>
             </div>
-            <div class="form-group" :class="!user.email || existingEmail ? 'has-error' : 'has-success'">
-              <label for="prof-email" class="col-4 col-sm-3 form-label col-form-label">Email Address</label>
+            <div class="row mb-3">
+              <label for="prof-email" class="col-4 col-sm-3 col-form-label">Email Address</label>
               <div class="col-8 col-sm-9">
                 <input class="form-control" type="text" id="prof-email" x-model="user.email" @blur="checkEmail()" required>
                 <span x-show="userLoading" class="fas fa-sync fa-spin fa-2x fa-fw ms-2" x-cloak aria-hidden="true"></span>
-                <span class="form-text">Required</span>
+                <div class="form-text">Required</div>
                 <span x-show="existingEmail" class="text-danger float-start" x-cloak>Email already exists! </span>
               </div>
             </div>

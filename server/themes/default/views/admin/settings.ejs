@@ -20,7 +20,7 @@
         <form @submit.prevent="settingsSubmit()" style="padding-bottom: 70px;">
 
           <h5>Global</h5>
-          <div class="form-group">
+          <div class="row mb-3">
             <label class="col-4 col-sm-3 form-label col-form-label">Log level</label>
             <div class="col-8 col-sm-9">
               <select x-model="settings.global.loglevel" class="form-select">
@@ -28,10 +28,10 @@
                 <option value="info">Info</option>
                 <option value="warn">Warning</option>
               </select>
-              <span class="form-text">Sets the level of information available in log files.</span>
+              <div class="form-text">Sets the level of information available in log files.</div>
             </div>
           </div>
-          <div class="form-group">
+          <div class="row mb-3">
             <label class="col-4 col-sm-3 form-label col-form-label">Theme</label>
             <div class="col-8 col-sm-9">
               <select x-model="settings.global.theme" class="form-select">
@@ -39,83 +39,85 @@
                   <option :value="theme" x-text="theme" :selected="settings.global && settings.global.theme === theme"></option>
                 </template>
               </select>
-              <span class="form-text">Choose an installed theme. Note: An application restart is required.</span>
+              <div class="form-text">Choose an installed theme. Note: An application restart is required.</div>
             </div>
           </div>
-          <div class="form-group">
+          <div class="row mb-3">
             <label class="col-4 col-sm-3 form-label col-form-label">Font Awesome Kit ID</label>
             <div class="col-8 col-sm-9">
               <input class="form-control" type="text" x-model="settings.global.faKey">
-              <span class="form-text">Set the Font Awesome SVG and JS Kit ID - See <a href="https://fontawesome.com/start" target="_blank">https://fontawesome.com/start</a><br>
-                This should be a v5 kit, with SVG as the technology. Note: An application restart is required.</span>
+              <div class="form-text">Set the Font Awesome SVG and JS Kit ID - See <a href="https://fontawesome.com/start" target="_blank">https://fontawesome.com/start</a><br>
+                This should be a v5 kit, with SVG as the technology. Note: An application restart is required.</div>
             </div>
           </div>
-          <div class="form-group">
+          <div class="row mb-3">
             <label class="col-4 col-sm-3 form-label col-form-label">Session Secret</label>
             <div class="col-8 col-sm-9">
               <div class="input-group">
                 <input class="form-control" type="text" x-model="settings.global.sessionSecret" required readonly>
                 <button class="btn btn-secondary" @click="generateKey('sessionSecret')" type="button">Generate</button>
               </div>
-              <span class="form-text">Secret key for cookie sessions, should be changed before deploying the application. Changing this will invalidate existing sessions.</span>
+              <div class="form-text">Secret key for cookie sessions, should be changed before deploying the application. Changing this will invalidate existing sessions.</div>
             </div>
           </div>
-          <div class="form-group">
+          <div class="row mb-3">
             <label class="col-4 col-sm-3 form-label col-form-label">Homepage Search Bar Location</label>
             <div class="col-8 col-sm-9">
               <select x-model="settings.global.searchLocation" class="form-select">
                 <option value="top">Top</option>
                 <option value="bottom">Bottom</option>
               </select>
-              <span class="form-text">Sets the location of the Search Bar.</span>
+              <div class="form-text">Sets the location of the Search Bar.</div>
             </div>
           </div>
-          <div class="form-group">
+          <div class="row mb-3">
             <label class="col-4 col-sm-3 form-label col-form-label">Monitor Name</label>
             <div class="col-8 col-sm-9">
               <input class="form-control" type="text" x-model="settings.global.monitorName">
-              <span class="form-text">Set the title of your PagerMon website</span>
+              <div class="form-text">Set the title of your PagerMon website</div>
             </div>
           </div>
-          <div class="form-group">
+          <div class="row mb-3">
             <label class="col-4 col-sm-3 form-label col-form-label">Enable One Time Modal</label>
             <div class="col-8 col-sm-9">
-              <div class="checkbox">
-                <label>
-                  <input type="checkbox" x-model="settings.global.frontPopupEnable"> Enable showing a modal to new visitors. This can be used for showing a disclaimer or Site/Contact information.
-                </label>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="frontPopupEnable" x-model="settings.global.frontPopupEnable">
+                <label class="form-check-label" for="frontPopupEnable">Enable showing a modal to new visitors. This can be used for showing a disclaimer or Site/Contact information.</label>
               </div>
             </div>
           </div>
-          <div class="form-group" x-show="settings.global && settings.global.frontPopupEnable">
+            <div class="row mb-3" x-show="settings.global && settings.global.frontPopupEnable">
             <label class="col-4 col-sm-3 form-label col-form-label">Modal Title</label>
             <div class="col-8 col-sm-9">
               <input class="form-control" type="text" x-model="settings.global.frontPopupTitle" :required="settings.global && settings.global.frontPopupEnable">
-              <span class="form-text">Modal Title</span>
+              <div class="form-text">
+Modal Title</span>
             </div>
           </div>
-          <div class="form-group" x-show="settings.global && settings.global.frontPopupEnable">
+            <div class="row mb-3" x-show="settings.global && settings.global.frontPopupEnable">
             <label class="col-4 col-sm-3 form-label col-form-label">Modal Content</label>
             <div class="col-8 col-sm-9">
               <textarea class="form-control" rows="6" x-model="settings.global.frontPopupContent" :required="settings.global && settings.global.frontPopupEnable"></textarea>
-              <span class="form-text">Modal Content</span>
+              <div class="form-text">
+Modal Content</span>
             </div>
           </div>
-          <div class="form-group">
+          <div class="row mb-3">
             <label class="col-4 col-sm-3 form-label col-form-label">Refresh Specific Alias</label>
             <div class="col-8 col-sm-9">
               <div class="checkbox">
                 <label>
                   <input type="checkbox" x-model="settings.global.SpecificAliasRefresh">
                   Refresh all messages for a specific Alias, when the Alias is saved.
-                  <span class="form-text">This mitigates the need for an Alias Refresh every time an alias is saved, but does not effect <strong>_</strong> wildcard alias.</span>
+                  <div class="form-text">
+This mitigates the need for an Alias Refresh every time an alias is saved, but does not effect <strong>_</strong> wildcard alias.</span>
                 </label>
               </div>
             </div>
           </div>
 
           <h5>Database</h5><span class="text-warning">These settings require restart to take effect.</span>
-          <div class="form-group">
+          <div class="row mb-3">
             <label class="col-4 col-sm-3 form-label col-form-label">Type</label>
             <div class="col-8 col-sm-9">
               <select x-model="settings.database.type" class="form-select" required>
@@ -129,42 +131,48 @@
             <label class="col-4 col-sm-3 form-label col-form-label">Path to Database File</label>
             <div class="col-8 col-sm-9">
               <input type="text" class="form-control" x-model="settings.database.file" :required="settings.database && settings.database.type == 'sqlite3'">
-              <span class="form-text">Configure the path to the SQLite Database</span>
+              <div class="form-text">
+Configure the path to the SQLite Database</span>
             </div>
           </div>
           <div class="form-group" x-show="settings.database && settings.database.type == 'oracledb'">
             <label class="col-4 col-sm-3 form-label col-form-label">Database Connection String</label>
             <div class="col-8 col-sm-9">
               <input type="text" class="form-control" x-model="settings.database.connectString" :required="settings.database && settings.database.type == 'oracledb'">
-              <span class="form-text">Oracle connection string</span>
+              <div class="form-text">
+Oracle connection string</span>
             </div>
           </div>
           <div class="form-group" x-show="settings.database && (settings.database.type == 'pg' || settings.database.type == 'mysql' || settings.database.type == 'mysql2' || settings.database.type == 'mssql')">
             <label class="col-4 col-sm-3 form-label col-form-label">Database Server</label>
             <div class="col-8 col-sm-9">
               <input type="text" class="form-control" x-model="settings.database.server">
-              <span class="form-text">Database Server Address</span>
+              <div class="form-text">
+Database Server Address</span>
             </div>
           </div>
           <div class="form-group" x-show="settings.database && (settings.database.type == 'pg' || settings.database.type == 'mysql' || settings.database.type == 'mysql2' || settings.database.type == 'mssql')">
             <label class="col-4 col-sm-3 form-label col-form-label">Database Port</label>
             <div class="col-8 col-sm-9">
               <input type="text" class="form-control" x-model="settings.database.port">
-              <span class="form-text">Database Server Port (default is 3306)</span>
+              <div class="form-text">
+Database Server Port (default is 3306)</span>
             </div>
           </div>
           <div class="form-group" x-show="settings.database && (settings.database.type == 'pg' || settings.database.type == 'mysql' || settings.database.type == 'mysql2' || settings.database.type == 'mssql')">
             <label class="col-4 col-sm-3 form-label col-form-label">Database Name</label>
             <div class="col-8 col-sm-9">
               <input type="text" class="form-control" x-model="settings.database.database">
-              <span class="form-text">Name of the database.</span>
+              <div class="form-text">
+Name of the database.</span>
             </div>
           </div>
           <div class="form-group" x-show="settings.database && (settings.database.type == 'pg' || settings.database.type == 'mysql' || settings.database.type == 'mysql2' || settings.database.type == 'mssql' || settings.database.type == 'oracledb')">
             <label class="col-4 col-sm-3 form-label col-form-label">Database Username</label>
             <div class="col-8 col-sm-9">
               <input type="text" class="form-control" x-model="settings.database.username">
-              <span class="form-text">Database Username</span>
+              <div class="form-text">
+Database Username</span>
             </div>
           </div>
           <div class="form-group" x-show="settings.database && (settings.database.type == 'pg' || settings.database.type == 'mysql' || settings.database.type == 'mysql2' || settings.database.type == 'mssql' || settings.database.type == 'oracledb')">
@@ -176,113 +184,125 @@
                   <div @click="showPassword = !showPassword" :class="showPassword ? 'fa fa-eye' : 'fa fa-eye-slash'" style="cursor: pointer; pointer-events: all;"></div>
                 </span>
               </div>
-              <span class="form-text">Database Password</span>
+              <div class="form-text">
+Database Password</span>
             </div>
           </div>
           <div class="form-group" x-show="settings.database && (settings.database.type == 'mysql' || settings.database.type == 'mysql2')">
             <label class="col-4 col-sm-3 form-label col-form-label">Alias Refresh CRON</label>
             <div class="col-8 col-sm-9">
               <input type="text" class="form-control" x-model="settings.database.aliasRefreshInterval">
-              <span class="form-text"><strong>Advanced Users</strong> - The cron timing for Automatic Alias Refresh. See <a href="https://www.npmjs.com/package/node-cron#cron-syntax" target="_blank">Cron Syntax</a>.<br />Default = "0 5,35 * * * *" (The 5th and 35th minute of every hour)</span>
+              <div class="form-text">
+<strong>Advanced Users</strong> - The cron timing for Automatic Alias Refresh. See <a href="https://www.npmjs.com/package/node-cron#cron-syntax" target="_blank">Cron Syntax</a>.<br />Default = "0 5,35 * * * *" (The 5th and 35th minute of every hour)</span>
             </div>
           </div>
 
           <h5>Message Rotation</h5>
-          <div class="form-group">
+          <div class="row mb-3">
             <div class="col-8 offset-2 col-sm-9 offset-sm-3">
               <div class="checkbox">
                 <label>
                   <input type="checkbox" x-model="settings.messages.rotationEnabled"> Rotate out old messages
                 </label>
-                <span class="form-text">Automatically delete messages older than the configured number of days. Runs daily at 01:00.</span>
+                <div class="form-text">
+Automatically delete messages older than the configured number of days. Runs daily at 01:00.</span>
               </div>
             </div>
           </div>
-          <div class="form-group">
+          <div class="row mb-3">
             <label class="col-4 col-sm-3 form-label col-form-label">Rotation interval (days)</label>
             <div class="col-8 col-sm-9">
               <input type="number" class="form-control" x-model.number="settings.messages.rotateDays" :disabled="!settings.messages.rotationEnabled" min="1">
-              <span class="form-text">Delete messages older than <span x-text="settings.messages.rotateDays"></span> days.</span>
+              <div class="form-text">
+Delete messages older than <span x-text="settings.messages.rotateDays"></span> days.</span>
             </div>
           </div>
-          <div class="form-group">
+          <div class="row mb-3">
             <label class="col-4 col-sm-3 form-label col-form-label">Minimum messages to keep</label>
             <div class="col-8 col-sm-9">
               <input type="number" class="form-control" x-model.number="settings.messages.rotateKeep" :disabled="!settings.messages.rotationEnabled" min="0">
-              <span class="form-text">Always keep at least <span x-text="settings.messages.rotateKeep"></span> of the most recent messages, even if they are older than the rotation interval. Set to 0 to disable.</span>
+              <div class="form-text">
+Always keep at least <span x-text="settings.messages.rotateKeep"></span> of the most recent messages, even if they are older than the rotation interval. Set to 0 to disable.</span>
             </div>
           </div>
 
           <h5>SQLite VACUUM</h5>
-          <div class="form-group">
+          <div class="row mb-3">
             <div class="col-8 offset-2 col-sm-9 offset-sm-3">
               <div class="checkbox">
                 <label>
                   <input type="checkbox" x-model="settings.messages.vacuumEnabled"> Enable periodic VACUUM
                 </label>
-                <span class="form-text">Compacts the database by reclaiming unused space. Only applies to SQLite. Runs during the nightly rotation.</span>
+                <div class="form-text">
+Compacts the database by reclaiming unused space. Only applies to SQLite. Runs during the nightly rotation.</span>
               </div>
             </div>
           </div>
-          <div class="form-group">
+          <div class="row mb-3">
             <label class="col-4 col-sm-3 form-label col-form-label">VACUUM interval (days)</label>
             <div class="col-8 col-sm-9">
               <input type="number" class="form-control" x-model.number="settings.messages.vacuumDays" :disabled="!settings.messages.vacuumEnabled" min="1">
-              <span class="form-text">Run VACUUM at most once every <span x-text="settings.messages.vacuumDays"></span> days.</span>
+              <div class="form-text">
+Run VACUUM at most once every <span x-text="settings.messages.vacuumDays"></span> days.</span>
             </div>
           </div>
 
           <h5>Messages</h5>
-          <div class="form-group">
+          <div class="row mb-3">
             <label class="col-4 col-sm-3 form-label col-form-label">Max limit per page</label>
             <div class="col-8 col-sm-9">
               <input type="number" class="form-control" x-model.number="settings.messages.maxLimit">
-              <span class="form-text">The maximum number of messages a user can display per page.</span>
+              <div class="form-text">
+The maximum number of messages a user can display per page.</span>
             </div>
           </div>
-          <div class="form-group">
+          <div class="row mb-3">
             <label class="col-4 col-sm-3 form-label col-form-label">Default limit per page</label>
             <div class="col-8 col-sm-9">
               <input type="number" class="form-control" x-model.number="settings.messages.defaultLimit">
-              <span class="form-text">Default number of messages to show per page.</span>
+              <div class="form-text">
+Default number of messages to show per page.</span>
             </div>
           </div>
-          <div class="form-group">
+          <div class="row mb-3">
             <label class="col-4 col-sm-3 form-label col-form-label">Icon Size</label>
             <div class="col-8 col-sm-9">
               <select x-model="settings.messages.iconsize" class="form-select">
                 <option value="small">Small</option>
                 <option value="normal">Normal</option>
               </select>
-              <span class="form-text">Set the size of the icons on the message list.</span>
+              <div class="form-text">
+Set the size of the icons on the message list.</span>
             </div>
           </div>
-          <div class="form-group">
+          <div class="row mb-3">
             <label class="col-4 col-sm-3 form-label col-form-label">Duplicate filtering</label>
             <div class="col-8 col-sm-9">
               <div class="checkbox">
                 <label>
                   <input type="checkbox" x-model="settings.messages.duplicateFiltering"> Filter out duplicate messages
                 </label>
-                <span class="form-text">Limit filtering in one or both of the below fields.</span>
+                <div class="form-text">
+Limit filtering in one or both of the below fields.</span>
               </div>
             </div>
           </div>
-          <div class="form-group">
+          <div class="row mb-3">
             <label class="col-4 col-sm-3 form-label col-form-label">Duplicate message limit</label>
             <div class="col-8 col-sm-9">
               <input type="number" class="form-control" x-model.number="settings.messages.duplicateLimit" :disabled="!settings.messages.duplicateFiltering">
             </div>
           </div>
-          <div class="form-group">
+          <div class="row mb-3">
             <label class="col-4 col-sm-3 form-label col-form-label">Duplicate time limit</label>
             <div class="col-8 col-sm-9">
               <input type="number" class="form-control" x-model.number="settings.messages.duplicateTime" :disabled="!settings.messages.duplicateFiltering">
-              <span class="form-text">Ignore a message if one of the last <span x-text="settings.messages.duplicateLimit"></span> messages in the past <span x-text="settings.messages.duplicateTime"></span> seconds contains the same address and content.
+              <div class="form-text">
+Ignore a message if one of the last <span x-text="settings.messages.duplicateLimit"></span> messages in the past <span x-text="settings.messages.duplicateTime"></span> seconds contains the same address and content.
                 <br />Set to 0 or blank to not limit the duplicate check query. This can impact database performance if both this and the above field are blank.</span>
             </div>
           </div>
-          <div class="form-group">
+          <div class="row mb-3">
             <label class="col-4 col-sm-3 form-label col-form-label">PDW mode</label>
             <div class="col-8 col-sm-9">
               <div class="checkbox">
@@ -293,7 +313,7 @@
               </div>
             </div>
           </div>
-          <div class="form-group">
+          <div class="row mb-3">
             <label class="col-4 col-sm-3 form-label col-form-label">PDW Mode - Admin Disable</label>
             <div class="col-8 col-sm-9">
               <div class="checkbox">
@@ -304,7 +324,7 @@
               </div>
             </div>
           </div>
-          <div class="form-group">
+          <div class="row mb-3">
             <label class="col-4 col-sm-3 form-label col-form-label">Hide Capcodes</label>
             <div class="col-8 col-sm-9">
               <div class="checkbox">
@@ -316,7 +336,7 @@
               </div>
             </div>
           </div>
-          <div class="form-group">
+          <div class="row mb-3">
             <label class="col-4 col-sm-3 form-label col-form-label">Hide Source</label>
             <div class="col-8 col-sm-9">
               <div class="checkbox">
@@ -327,7 +347,7 @@
               </div>
             </div>
           </div>
-          <div class="form-group">
+          <div class="row mb-3">
             <label class="col-4 col-sm-3 form-label col-form-label">Enable Secure Mode</label>
             <div class="col-8 col-sm-9">
               <div class="checkbox">
@@ -343,14 +363,15 @@
           <div class="row">
             <label class="col-4 col-sm-3 form-label col-form-label">Text/Regex Matching</label>
             <div class="col-8 col-sm-9">
-              <span class="form-text">Highlights, Labels, or Replaces text/regex match.<br />
+              <div class="form-text">
+Highlights, Labels, or Replaces text/regex match.<br />
                 In <strong>Label</strong> mode, the text is not highlighted, but tooltips are visible when hovering over matched text (if a label is present).<br />
                 In <strong>Highlight</strong> mode, the text is highlighted, and tooltips are visible when hovering over matched text (if a label is present).<br />
                 In <strong>Replace</strong> Mode, the replacement can be text, or a regex replacement consisting of groups (eg: &lt;a href="?q=$1"&gt;$2&lt;/a&gt;)<br />
                 <strong>Note: Reordering rows may help when you have many complex regex replacements.</strong></span>
             </div>
           </div>
-          <div class="form-group">
+          <div class="row mb-3">
             <div class="col-sm-11 offset-sm-1">
               <table class="table table-striped table-sm">
                 <thead>
@@ -401,10 +422,11 @@
           <div class="row">
             <label class="col-4 col-sm-3 form-label col-form-label">Alias Templates</label>
             <div class="col-8 col-sm-9">
-              <span class="form-text">Templates Available when editing/creating an Alias. Use these to speed up alias creation. Filter checkbox automatically checks the "Filter Alias" setting for the Alias</span>
+              <div class="form-text">
+Templates Available when editing/creating an Alias. Use these to speed up alias creation. Filter checkbox automatically checks the "Filter Alias" setting for the Alias</span>
             </div>
           </div>
-          <div class="form-group">
+          <div class="row mb-3">
             <div class="col-sm-11 offset-sm-1">
               <table class="table table-striped table-sm">
                 <thead>
@@ -452,7 +474,7 @@
           </div>
 
           <h5>Auth</h5>
-          <div class="form-group">
+          <div class="row mb-3">
             <label class="col-4 col-sm-3 form-label col-form-label">Registration</label>
             <div class="col-8 col-sm-9">
               <label>
@@ -465,7 +487,7 @@
           <div class="row">
             <label class="col-4 col-sm-3 form-label col-form-label">API Keys</label>
           </div>
-          <div class="form-group">
+          <div class="row mb-3">
             <div class="col-sm-11 offset-sm-1">
               <table class="table table-striped table-sm">
                 <thead>
@@ -506,7 +528,7 @@
           </div>
 
           <h5>Monitoring</h5>
-          <div class="form-group">
+          <div class="row mb-3">
             <label class="col-4 col-sm-3 form-label col-form-label">Azure Application Insights</label>
             <div class="col-8 col-sm-9">
               <div class="checkbox">
@@ -520,10 +542,11 @@
             <label class="col-4 col-sm-3 form-label col-form-label">Azure Application Insights Key</label>
             <div class="col-8 col-sm-9">
               <input class="form-control" type="text" x-model="settings.monitoring.azureKey" :required="settings.monitoring && settings.monitoring.azureEnable">
-              <span class="form-text">Azure Application Insights Key. See <a href="https://docs.microsoft.com/en-us/azure/azure-monitor/learn/nodejs-quick-start#configure-app-insights-sdk">Documentation</a></span>
+              <div class="form-text">
+Azure Application Insights Key. See <a href="https://docs.microsoft.com/en-us/azure/azure-monitor/learn/nodejs-quick-start#configure-app-insights-sdk">Documentation</a></span>
             </div>
           </div>
-          <div class="form-group">
+          <div class="row mb-3">
             <label class="col-4 col-sm-3 form-label col-form-label">Google Analytics</label>
             <div class="col-8 col-sm-9">
               <div class="checkbox">
@@ -537,7 +560,8 @@
             <label class="col-4 col-sm-3 form-label col-form-label">Tracking ID</label>
             <div class="col-8 col-sm-9">
               <input class="form-control" type="text" x-model="settings.monitoring.gaTrackingCode" :required="settings.monitoring && settings.monitoring.gaEnable">
-              <span class="form-text">Tracking ID. See <a href="https://support.google.com/analytics/answer/1008080?hl=en">Documentation</a></span>
+              <div class="form-text">
+Tracking ID. See <a href="https://support.google.com/analytics/answer/1008080?hl=en">Documentation</a></span>
             </div>
           </div>
 
@@ -548,7 +572,7 @@
               <div class="row">
                 <div class="col-12 col-sm-6"><h5 x-text="plugin.name"></h5><p><em x-html="plugin.description"></em></p></div>
               </div>
-              <div class="form-group">
+              <div class="row mb-3">
                 <label class="col-4 col-sm-3 form-label col-form-label">Enable</label>
                 <div class="col-8 col-sm-9">
                   <div class="checkbox">
