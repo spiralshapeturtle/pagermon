@@ -1875,38 +1875,38 @@ router.route('/stats')
 
     Promise.all([
       // 0: total messages — cached via getCachedCount (120s)
-      getCachedCount('stats_total', () => db('messages').count('* as msgcount'))
+      getCachedCount('stats_total', () => db('messages').countDistinct('message as msgcount'))
         .then(r => +r[0].msgcount),
       // 1: messages last 24h
-      db('messages').count('* as c').where('timestamp', '>', since24h).then(r => +r[0].c),
+      db('messages').countDistinct('message as c').where('timestamp', '>', since24h).then(r => +r[0].c),
       // 2: messages last 7 days
-      db('messages').count('* as c').where('timestamp', '>', since7d).then(r => +r[0].c),
+      db('messages').countDistinct('message as c').where('timestamp', '>', since7d).then(r => +r[0].c),
       // 3: total active capcodes
       db('capcodes').count('* as c').where('ignore', 0).then(r => +r[0].c),
       // 4: messages per day last 31 days
       isSqlite ? db.raw(
-        "SELECT strftime('%Y-%m-%d', datetime(timestamp, 'unixepoch', 'localtime')) as day, COUNT(*) as count FROM messages WHERE timestamp > ? GROUP BY day ORDER BY day",
+        "SELECT strftime('%Y-%m-%d', datetime(timestamp, 'unixepoch', 'localtime')) as day, COUNT(DISTINCT message) as count FROM messages WHERE timestamp > ? GROUP BY day ORDER BY day",
         [since31d]
       ) : isMysql ? db.raw(
-        "SELECT DATE(CONVERT_TZ(FROM_UNIXTIME(timestamp), 'UTC', 'Europe/Amsterdam')) as day, COUNT(*) as count FROM messages WHERE timestamp > ? GROUP BY day ORDER BY day",
+        "SELECT DATE(CONVERT_TZ(FROM_UNIXTIME(timestamp), 'UTC', 'Europe/Amsterdam')) as day, COUNT(DISTINCT message) as count FROM messages WHERE timestamp > ? GROUP BY day ORDER BY day",
         [since31d]
       ) : Promise.resolve([]),
       // 5: messages per hour last 24h
       isSqlite ? db.raw(
-        "SELECT CAST(strftime('%H', datetime(timestamp, 'unixepoch', 'localtime')) AS INTEGER) as hour, COUNT(*) as count FROM messages WHERE timestamp > ? GROUP BY hour ORDER BY hour",
+        "SELECT CAST(strftime('%H', datetime(timestamp, 'unixepoch', 'localtime')) AS INTEGER) as hour, COUNT(DISTINCT message) as count FROM messages WHERE timestamp > ? GROUP BY hour ORDER BY hour",
         [since24h]
       ) : isMysql ? db.raw(
-        "SELECT HOUR(CONVERT_TZ(FROM_UNIXTIME(timestamp), 'UTC', 'Europe/Amsterdam')) as hour, COUNT(*) as count FROM messages WHERE timestamp > ? GROUP BY hour ORDER BY hour",
+        "SELECT HOUR(CONVERT_TZ(FROM_UNIXTIME(timestamp), 'UTC', 'Europe/Amsterdam')) as hour, COUNT(DISTINCT message) as count FROM messages WHERE timestamp > ? GROUP BY hour ORDER BY hour",
         [since24h]
       ) : Promise.resolve([]),
       // 6: messages last 31 days
-      db('messages').count('* as c').where('timestamp', '>', since31d).then(r => +r[0].c),
+      db('messages').countDistinct('message as c').where('timestamp', '>', since31d).then(r => +r[0].c),
       // 7: berichten per dag van de week (0=zo t/m 6=za) — laatste 31 dagen
       isSqlite ? db.raw(
-        "SELECT CAST(strftime('%w', datetime(timestamp, 'unixepoch', 'localtime')) AS INTEGER) as dow, COUNT(*) as count FROM messages WHERE timestamp > ? GROUP BY dow ORDER BY dow",
+        "SELECT CAST(strftime('%w', datetime(timestamp, 'unixepoch', 'localtime')) AS INTEGER) as dow, COUNT(DISTINCT message) as count FROM messages WHERE timestamp > ? GROUP BY dow ORDER BY dow",
         [since31d]
       ) : isMysql ? db.raw(
-        "SELECT (DAYOFWEEK(CONVERT_TZ(FROM_UNIXTIME(timestamp), 'UTC', 'Europe/Amsterdam')) - 1) as dow, COUNT(*) as count FROM messages WHERE timestamp > ? GROUP BY dow ORDER BY dow",
+        "SELECT (DAYOFWEEK(CONVERT_TZ(FROM_UNIXTIME(timestamp), 'UTC', 'Europe/Amsterdam')) - 1) as dow, COUNT(DISTINCT message) as count FROM messages WHERE timestamp > ? GROUP BY dow ORDER BY dow",
         [since31d]
       ) : Promise.resolve([]),
       // 8: top 5 meest actieve aliased capcodes — laatste 31 dagen
@@ -1949,7 +1949,7 @@ router.route('/systemstatus')
     try { dbSize = fs.statSync(dbFile).size; } catch(e) {}
 
     Promise.all([
-      db('messages').count('* as c').then(r => r[0].c),
+      db('messages').countDistinct('message as c').then(r => r[0].c),
       db('capcodes').count('* as c').then(r => r[0].c),
     ]).then(function(counts) {
       res.json({

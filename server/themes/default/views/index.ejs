@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <%- include ('global/header') -%>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js" integrity="sha512-zoJXRvW2gC8Z0Xo3lBbao5+AS3g6YWr5ztKqaicua11xHo+AvE1b0lT9ODgrHTmNUxeCw0Ry4BGRYZfXu70weg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script defer src="/vendor/socketio/socket.io.js?v=local2"></script>
 <% if (frontPopupEnable) { %>
   <div class="modal fade" tabindex="-1" aria-labelledby="myLargeModalLabel" aria-modal="true" id="discModal">
     <div class="modal-dialog">
@@ -316,8 +316,8 @@
     login:       <%- login ? 'true' : 'false' %>
   };
   </script>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <script defer src="/javascripts/pagermon-app.js?v=28"></script>
+  <script defer src="/vendor/chartjs/chart.umd.min.js?v=local2"></script>
+  <script defer src="/javascripts/pagermon-app.js?v=29"></script>
   <script>
   (function() {
     function pad(n) { return String(n).padStart(2, '0'); }
