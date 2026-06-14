@@ -127,6 +127,9 @@
       stats: null, statsLoading: false,
       sneakpeek: false,
       _socket: null,
+      _audioCtx: null,
+      _notified: new Set(),
+      _notifiedOrder: [],
 
       init() {
         this.timeRelative = Utils.getCookie('timeRelative') === 'on';
@@ -169,8 +172,12 @@
         fetch(`${base}?page=${page}&limit=${limit}&q=${q}${sneak}`)
           .then(r => r.json())
           .then(res => {
-            this.messages = this._group(res.messages);
+            this.messages = this._group(res.messages || []);
             this.pager = this._buildPager(res.init);
+            this.loading = false;
+          })
+          .catch(() => {
+            // Never leave the full-screen spinner stuck on a failed/aborted fetch.
             this.loading = false;
           });
       },
@@ -209,6 +216,43 @@
       toggleSound() {
         this.soundEnabled = !this.soundEnabled;
         Utils.setCookie('soundEnabled', this.soundEnabled ? 'on' : 'off');
+        // Play a confirmation beep on enable — doubles as the user gesture that
+        // unlocks the AudioContext so later alert beeps are allowed to play.
+        if (this.soundEnabled) this._playBeep();
+      },
+
+      // Synthesize a short alert beep via the Web Audio API (no asset needed).
+      _playBeep() {
+        try {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          if (!Ctx) return;
+          if (!this._audioCtx) this._audioCtx = new Ctx();
+          const ctx = this._audioCtx;
+          if (ctx.state === 'suspended') ctx.resume();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.type = 'sine'; osc.frequency.value = 880;
+          gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.4);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.42);
+        } catch (e) {}
+      },
+
+      // Fire sound + desktop notification for a genuinely new alarm, deduped by
+      // timestamp|message so a multi-capcode alarm only alerts once.
+      _notifyNewMessage(m) {
+        const key = m.timestamp + '|' + m.message;
+        if (this._notified.has(key)) return;
+        this._notified.add(key);
+        this._notifiedOrder.push(key);
+        if (this._notifiedOrder.length > 200) this._notified.delete(this._notifiedOrder.shift());
+        if (this.soundEnabled) this._playBeep();
+        if (this.notificationEnabled === 'true' && 'Notification' in window && Notification.permission === 'granted') {
+          try { new Notification('PagerMon', { body: m.message, tag: key }); } catch (e) {}
+        }
       },
 
       toggleNotifications() {
@@ -406,6 +450,11 @@
       _initSocket() {
         if (this._socket) return;
         this._socket = io({ transports: ['websocket'] });
+        // Sync the sneakpeek room once connected (covers reconnects and the race
+        // where the toggle is flipped before the socket finishes connecting).
+        this._socket.on('connect', () => {
+          if (this.sneakpeek) this._socket.emit('setSneakpeek', true);
+        });
         this._socket.on('messagePost', m => {
           m.date = Utils.fmtDate(m.timestamp); m.time = Utils.fmtTime(m.timestamp);
           // Real-time grouping logic
@@ -415,9 +464,15 @@
             if (!existing.capcodes.find(c => c.id === m.id)) {
               existing.capcodes.push(m);
             }
-          } else if ((this.pager.currentPage || 1) === 1) {
-            // New unique message — only prepend live when viewing the first page,
-            // otherwise it would corrupt pagination on page 2+ (phantom rows).
+            return;
+          }
+          // New unique alarm — alert the user (deduped by timestamp|message).
+          this._notifyNewMessage(m);
+          // Only render it live on the unfiltered first page. During an active
+          // search we can't tell client-side whether it matches the query, and on
+          // page 2+ prepending it would corrupt pagination with phantom rows.
+          const searching = !!(this.query && this.query.trim());
+          if (!searching && (this.pager.currentPage || 1) === 1) {
             m.capcodes = [m];
             this.messages.unshift(m);
             if (this.messages.length > this.pager.limit) this.messages.pop();

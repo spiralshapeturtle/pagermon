@@ -15,13 +15,12 @@ function isLoggedInMessages(req, res, next) {
             return next();
         } else {
             //perform api authentication - all api keys are assumed to be admin
-            return passport.authenticate('login-api', { session: false, failWithError: true })(req, res, next),
-                function (next) {
-                    next();
-                },
-                function (res) {
+            return passport.authenticate('login-api', { session: false }, function (err, user) {
+                if (err || !user) {
                     return res.status(401).json({ error: 'Authentication failed.' });
                 }
+                return next();
+            })(req, res, next);
         }
     } else {
         return next();
@@ -80,15 +79,14 @@ function isAdmin (req, res, next) {
       //if the user is authenticated and the user's role is admin carry on
       return next();
     } else {
-        //if apikey in header perform api authentication - all api keys are assumed to be admin 
-      return passport.authenticate('login-api', { session: false, failWithError: true })(req, res, next),
-        function (next) {
-          next();
-        },
-        function (res) {
+        //if apikey in header perform api authentication - all api keys are assumed to be admin
+      return passport.authenticate('login-api', { session: false }, function (err, user) {
+        if (err || !user) {
           return res.status(401).json({ error: 'Authentication failed.' });
         }
-    } 
+        return next();
+      })(req, res, next);
+    }
   }
 
   function comparePass(userPassword, databasePassword) {

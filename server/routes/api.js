@@ -324,8 +324,9 @@ router.route('/messages')
         initData.currentPage = 0;
       }
     }
-    if (req.query.limit && req.query.limit <= maxLimit) {
-      initData.limit = parseInt(req.query.limit, 10);
+    const reqLimit = parseInt(req.query.limit, 10);
+    if (reqLimit >= 1 && reqLimit <= maxLimit) {
+      initData.limit = reqLimit;
     }
     let subquery;
     if (pdwMode) {
@@ -869,8 +870,9 @@ router.route('/messageSearch')
         initData.currentPage = 0;
       }
     }
-    if (req.query.limit && req.query.limit <= maxLimit) {
-      initData.limit = parseInt(req.query.limit, 10);
+    const reqLimit = parseInt(req.query.limit, 10);
+    if (reqLimit >= 1 && reqLimit <= maxLimit) {
+      initData.limit = reqLimit;
     } else {
       initData.limit = parseInt(defaultLimit, 10);
     }
@@ -960,7 +962,7 @@ router.route('/messageSearch')
         const truncated = rows && rows.length > 10000;
         if (truncated) rows = rows.slice(0, 10000);
         if (rows) {
-          for (row of rows) {
+          for (let row of rows) {
             row.datetime = row.timestamp // Copy timestamp to datetime for backwards compatibility
             if (HideCapcode) {
               if (!req.isAuthenticated() || (req.isAuthenticated() && req.user.role == 'user')) {
