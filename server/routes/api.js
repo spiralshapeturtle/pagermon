@@ -87,9 +87,11 @@ const PUSH_DUPE_TTL  = 5000; // 5 seconden venster voor ontdubbeling
 async function sendPushNotifications(row) {
   if (!_pushReady) return;
 
-  // Ontdubbeling: als hetzelfde bericht in de afgelopen 5 seconden is verstuurd, sla dan over.
+  // Ontdubbeling op alarm-identiteit (timestamp|message): dit onderdrukt de fan-out
+  // van hetzelfde alarm naar meerdere capcodes, maar laat twee losse incidenten met
+  // toevallig dezelfde tekst (ander timestamp) wel allebei een push sturen.
   const now = Date.now();
-  const msgKey = row.message || '';
+  const msgKey = (row.timestamp || '') + '|' + (row.message || '');
   const lastSent = _sentPushCache.get(msgKey);
   if (lastSent && (now - lastSent) < PUSH_DUPE_TTL) {
     return;
