@@ -60,14 +60,39 @@
   };
 
   // ---- 3. Component UI Logic ----
+  // Luminance-based text color for capcode badges ("chirps"). Parses any CSS color
+  // (named/hex/rgb) via a 1x1 canvas, computes perceived luminance, and picks dark
+  // text on light badges / light text on dark badges so every chirp stays readable.
   let _colorCache = {};
+  let _colorCacheSize = 0;
+  let _colorCanvas = null;
+  let _colorCtx = null;
   const UI = {
     getBadgeColor(color) {
       const isLight = document.documentElement.classList.contains('light-theme');
-      const key = `${color}:${isLight?'L':'D'}`;
+      const fallback = isLight ? '#1a1f2e' : '#D6EEFF';
+      if (!color) return fallback;
+      const key = `${color}:${isLight ? 'L' : 'D'}`;
       if (_colorCache[key]) return _colorCache[key];
-      // simplified luminance check
-      return (color === '#ffffff' || isLight) ? '#1a1f2e' : '#D6EEFF';
+      try {
+        if (!_colorCtx) {
+          _colorCanvas = document.createElement('canvas');
+          _colorCanvas.width = _colorCanvas.height = 1;
+          _colorCtx = _colorCanvas.getContext('2d', { willReadFrequently: true });
+        }
+        _colorCtx.fillStyle = color;
+        _colorCtx.fillRect(0, 0, 1, 1);
+        const d = _colorCtx.getImageData(0, 0, 1, 1).data;
+        const luminance = (0.299 * d[0] + 0.587 * d[1] + 0.114 * d[2]) / 255;
+        const lightText = isLight ? '#ffffff' : '#D6EEFF';
+        const result = luminance > 0.55 ? '#1a1f2e' : lightText;
+        if (_colorCacheSize >= 200) { _colorCache = {}; _colorCacheSize = 0; }
+        _colorCache[key] = result;
+        _colorCacheSize++;
+        return result;
+      } catch (e) {
+        return fallback;
+      }
     },
 
     initTooltip(el, text, Tooltip) {
@@ -100,6 +125,7 @@
       timeRelative: false, soundEnabled: false, notificationEnabled: 'false',
       searchOpen: false, query: '', mapsLoading: {}, copyFeedback: {},
       stats: null, statsLoading: false,
+      sneakpeek: false,
       _socket: null,
 
       init() {
@@ -108,8 +134,22 @@
         this.notificationEnabled = Utils.getCookie('notificationEnabled') || 'false';
         const urlParams = new URLSearchParams(window.location.search);
         this.query = urlParams.get('q') || '';
+        // Sneakpeek = "landelijk meekijken zonder login": anonymous users see all
+        // messages (incl. onlyShowLoggedIn capcodes). Driven by the sneakpeek cookie
+        // set by the toggle button in the menu.
+        this.sneakpeek = /(?:^|;\s*)sneakpeek=on/.test(document.cookie);
         this.updateData();
         this._initSocket();
+
+        // The sneakpeek toggle (menu.ejs) flips the cookie and fires this event.
+        // Re-sync our state, move the socket to the correct room, and reload data.
+        window.addEventListener('sneakpeekChange', (e) => {
+          this.sneakpeek = !!(e.detail && e.detail.active);
+          if (this._socket && this._socket.connected) {
+            this._socket.emit('setSneakpeek', this.sneakpeek);
+          }
+          this.updateData();
+        });
 
         // Listen for stats modal show
         const modalEl = document.getElementById('statsModal');
@@ -122,13 +162,40 @@
         this.loading = true;
         const limit = Utils.getCookie('messageLimit') || 20;
         const q = encodeURIComponent(this.query || '');
-        fetch(`/api/messages/?page=${page}&limit=${limit}&q=${q}`)
+        const sneak = this.sneakpeek ? '&sneakpeek=1' : '';
+        fetch(`/api/messages/?page=${page}&limit=${limit}&q=${q}${sneak}`)
           .then(r => r.json())
           .then(res => {
             this.messages = this._group(res.messages);
-            this.pager = res.init;
+            this.pager = this._buildPager(res.init);
             this.loading = false;
           });
+      },
+
+      // The API returns currentPage as a 0-based index and no page list, while the
+      // pagination template works with 1-based page numbers and a `pages` array.
+      // Normalise here so the pager renders correctly.
+      _buildPager(init) {
+        init = init || {};
+        const pageCount = init.pageCount || 0;
+        const currentPage = pageCount
+          ? Math.min((init.currentPage || 0) + 1, pageCount)
+          : 1;
+        return { ...init, pageCount, currentPage, pages: this._pageList(currentPage, pageCount) };
+      },
+
+      // Build a windowed list of page numbers around the current page, using null
+      // entries as ellipsis markers (rendered as "…" by the template).
+      _pageList(current, total) {
+        if (!total || total <= 1) return total === 1 ? [1] : [];
+        const delta = 2;
+        const left = Math.max(1, current - delta);
+        const right = Math.min(total, current + delta);
+        const pages = [];
+        if (left > 1) { pages.push(1); if (left > 2) pages.push(null); }
+        for (let i = left; i <= right; i++) pages.push(i);
+        if (right < total) { if (right < total - 1) pages.push(null); pages.push(total); }
+        return pages;
       },
 
       toggleTimeMode() {
@@ -345,11 +412,12 @@
             if (!existing.capcodes.find(c => c.id === m.id)) {
               existing.capcodes.push(m);
             }
-          } else {
-            // New unique message
+          } else if ((this.pager.currentPage || 1) === 1) {
+            // New unique message — only prepend live when viewing the first page,
+            // otherwise it would corrupt pagination on page 2+ (phantom rows).
             m.capcodes = [m];
             this.messages.unshift(m);
-            if(this.messages.length > 50) this.messages.pop();
+            if (this.messages.length > this.pager.limit) this.messages.pop();
           }
         });
       },

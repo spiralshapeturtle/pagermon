@@ -417,7 +417,7 @@ router.route('/messages')
       .then(function (initcount) {
         initData.msgCount = initcount[0].msgcount;
         initData.pageCount = Math.ceil(initData.msgCount / initData.limit);
-        if (initData.currentPage > initData.pageCount) {
+        if (initData.currentPage >= initData.pageCount) {
           initData.currentPage = 0;
         }
         initData.offset = initData.limit * initData.currentPage;
@@ -996,7 +996,7 @@ router.route('/messageSearch')
         }
         initData.msgCount = rowCount;
         initData.pageCount = Math.ceil(initData.msgCount / initData.limit);
-        if (initData.currentPage > initData.pageCount) {
+        if (initData.currentPage >= initData.pageCount) {
           initData.currentPage = 0;
         }
         initData.offset = initData.limit * initData.currentPage;
