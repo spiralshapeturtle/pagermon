@@ -163,7 +163,10 @@
         const limit = Utils.getCookie('messageLimit') || 20;
         const q = encodeURIComponent(this.query || '');
         const sneak = this.sneakpeek ? '&sneakpeek=1' : '';
-        fetch(`/api/messages/?page=${page}&limit=${limit}&q=${q}${sneak}`)
+        // Plain feed comes from /messages (ignores q); an actual search term must
+        // go to /messageSearch, which is the only endpoint that filters on q.
+        const base = (this.query && this.query.trim()) ? '/api/messageSearch' : '/api/messages';
+        fetch(`${base}?page=${page}&limit=${limit}&q=${q}${sneak}`)
           .then(r => r.json())
           .then(res => {
             this.messages = this._group(res.messages);

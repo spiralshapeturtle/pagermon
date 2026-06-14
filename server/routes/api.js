@@ -899,7 +899,11 @@ router.route('/messageSearch')
     const data = []
     db.select('messages.*', 'capcodes.alias', 'capcodes.agency', 'capcodes.icon', 'capcodes.color', 'capcodes.ignore', db.raw('CASE WHEN NOT capcodes.address = messages.address THEN 1 ELSE 0 END as wildcard'))
       .modify(function (qb) {
-        if (dbtype == 'sqlite3' && query != '') {
+        // Purely numeric terms are capcodes (9-digit address) or vehicle numbers
+        // (in the message text). The SQLite FTS index only covers message/alias/
+        // agency, so numeric searches use LIKE on the base table instead of FTS.
+        const numericQuery = query != '' && /^[0-9]+$/.test(query);
+        if (dbtype == 'sqlite3' && query != '' && !numericQuery) {
           qb.from('messages_search_index')
             .leftJoin('messages', 'messages.id', '=', 'messages_search_index.rowid')
         } else {
@@ -920,7 +924,15 @@ router.route('/messageSearch')
             this.whereNull('capcodes.onlyShowLoggedIn').orWhere('capcodes.onlyShowLoggedIn', false);
           });
         }
-        if (dbtype == 'sqlite3' && query != '') {
+        if (dbtype == 'sqlite3' && numericQuery) {
+          // Capcode / vehicle search: match the number anywhere in message,
+          // address or source (address is zero-padded, so use a contains match).
+          qb.where(function() {
+            this.where('messages.message', 'like', '%' + query + '%')
+                .orWhere('messages.address', 'like', '%' + query + '%')
+                .orWhere('messages.source', 'like', '%' + query + '%');
+          });
+        } else if (dbtype == 'sqlite3' && query != '') {
           qb.whereRaw('messages_search_index MATCH ?', query)
         } else if ((dbtype == 'mysql' || dbtype == 'mysql2') && query != '') {
           //This wraps the search query in quotes so MySQL searches for the complete term rather than individual words.
