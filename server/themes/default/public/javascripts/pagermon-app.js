@@ -437,8 +437,10 @@
         const res = []; const map = {};
         msgs.forEach(m => {
           m.date = Utils.fmtDate(m.timestamp); m.time = Utils.fmtTime(m.timestamp);
-          const key = `${m.timestamp}|${m.message}`;
-          if (m.isFlexGroup && map[key]) {
+          // Groepeer bij voorkeur op de autoritatieve group_id; val terug op timestamp|message
+          // voor oude berichten (van vóór de group_id-migratie).
+          const key = m.group_id ? ('g:' + m.group_id) : (`${m.timestamp}|${m.message}`);
+          if ((m.group_id || m.isFlexGroup) && map[key]) {
             map[key].capcodes.push(m);
           } else {
             m.capcodes = [m]; map[key] = m; res.push(m);
@@ -478,6 +480,41 @@
             if (this.messages.length > this.pager.limit) this.messages.pop();
           }
         });
+        // Eén FLEX-groepscall komt als één pakket binnen: render als één melding-blok
+        // met alle capcodes, en notificeer/beep precies één keer voor de groep.
+        this._socket.on('messageGroup', payload => {
+          const msgs = (payload && payload.messages) || [];
+          if (msgs.length === 0) return;
+          msgs.forEach(m => { m.date = Utils.fmtDate(m.timestamp); m.time = Utils.fmtTime(m.timestamp); });
+          const head = msgs[0];
+          // Bestaat de groep al (bv. deels via een eerder los bericht)? Dan capcodes mergen.
+          const existing = this.messages.find(ex =>
+            (payload.groupId && ex.group_id === payload.groupId) ||
+            (ex.timestamp === head.timestamp && ex.message === head.message));
+          if (existing) {
+            msgs.forEach(m => { if (!existing.capcodes.find(c => c.id === m.id)) existing.capcodes.push(m); });
+            return;
+          }
+          this._notifyNewMessage(head);
+          const searching = !!(this.query && this.query.trim());
+          if (!searching && (this.pager.currentPage || 1) === 1) {
+            head.capcodes = msgs;
+            this.messages.unshift(head);
+            if (this.messages.length > this.pager.limit) this.messages.pop();
+          }
+        });
+      },
+
+      // FLEX routing-/groepscodes (2029568-2029583) altijd onderaan de capcode-lijst,
+      // ongeacht binnenkomstvolgorde. Overige capcodes behouden hun relatieve volgorde
+      // (Array.sort is stabiel).
+      orderedCapcodes(message) {
+        const caps = (message && message.capcodes) || [];
+        const isGroup = cap => {
+          const n = parseInt(cap && cap.address, 10);
+          return Number.isFinite(n) && n >= 2029568 && n <= 2029583;
+        };
+        return caps.slice().sort((a, b) => (isGroup(a) ? 1 : 0) - (isGroup(b) ? 1 : 0));
       },
 
       // API Proxies

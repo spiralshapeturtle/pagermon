@@ -10,6 +10,7 @@ const converter = require('json-2-csv');
 
 const nconf = require('nconf');
 const axios = require('axios');
+const crypto = require('crypto');
 
 const confFile = './config/config.json';
 nconf.file({ file: confFile });
@@ -300,6 +301,193 @@ function lookupCapcode(address) {
 }
 
 
+// Promisified plugin-handler aanroep, zodat de verwerking als async/await leesbaar blijft.
+function runPlugin(scope, data) {
+  return new Promise(function (resolve) {
+    pluginHandler.handle('message', scope, data, function (response) { resolve(response); });
+  });
+}
+
+// Verwerkt één binnenkomend bericht: dupe-filter, plugin 'before', capcode-lookup,
+// insert en row-fetch. Doet GEEN socket-emit en raakt res niet aan — de caller
+// (los bericht of batch) beslist over emit en HTTP-respons.
+// Resolved met:
+//   { status: 'duplicate' }
+//   { status: 'filtered' }
+//   { status: 'inserted', msgId, row, rowUser }   (row/rowUser kunnen null zijn als de re-fetch faalt)
+async function processIncomingMessage(data, cfg, groupId) {
+  const filterDupes = cfg.filterDupes;
+  const dupeLimit = cfg.dupeLimit;
+  const dupeTime = cfg.dupeTime;
+
+  // Altijd schoon initialiseren (net als voorheen): plugins vullen dit tijdens 'before';
+  // een client mag geen pluginData (bv. ignore) injecteren.
+  data.pluginData = {};
+  let timestamp;
+
+  if (filterDupes) {
+    // this is a bad solution and tech debt that will bite us in the ass if we ever go HA, but that's a problem for future me and that guy's a dick
+    timestamp = data.timestamp || data.datetime || 1;
+    const timeDiff = timestamp - dupeTime;
+    const matches = msgBuffer.filter(function (m) { return m.message === data.message && m.address === data.address; });
+    if (matches.length > 0) {
+      if (dupeTime != 0) {
+        const timeFind = matches.find(function (msg) { return msg.timestamp > timeDiff; });
+        if (timeFind) {
+          logger.main.info(util.format('Ignoring duplicate: %o', data.message));
+          return { status: 'duplicate' };
+        }
+      } else {
+        logger.main.info(util.format('Ignoring duplicate: %o', data.message));
+        return { status: 'duplicate' };
+      }
+    }
+    let dupeArrayLimit = dupeLimit;
+    if (dupeArrayLimit == 0) dupeArrayLimit = 25;
+    if (msgBuffer.length > dupeArrayLimit) msgBuffer.shift();
+    msgBuffer.push(pick(data, ['message', 'timestamp', 'address']));
+  }
+
+  if (data.timestamp)
+    timestamp = data.timestamp;
+  else if (data.datetime) {
+    logger.main.warn(`An incoming message from ${data.source || 'an unknown source'} contains the timestamp as field 'datetime'. Update the message source to use the variable 'timestamp' instead!`);
+    timestamp = data.datetime;
+  } else
+    timestamp = 1;
+
+  // Ensure timestamp is always stored as an integer (Unix seconds)
+  timestamp = parseInt(timestamp, 10);
+  if (!Number.isFinite(timestamp) || timestamp <= 0) timestamp = Math.floor(Date.now() / 1000);
+
+  // send data to pluginHandler before proceeding
+  logger.main.debug('beforeMessage start');
+  const beforeResp = await runPlugin('before', data);
+  logger.main.debug(util.format('%o', beforeResp));
+  logger.main.debug('beforeMessage done');
+  if (beforeResp && beforeResp.pluginData) data = beforeResp;
+  if (data.pluginData.ignore) return { status: 'filtered' };
+
+  const address = data.address || '0000000';
+  const message = data.message || 'null';
+  const timeDiff = timestamp - dupeTime;
+  const source = data.source || 'UNK';
+
+  const dupRows = await db.from('messages')
+    .select('id')
+    .modify(function (queryBuilder) {
+      queryBuilder.where('address', '=', address).andWhere('message', '=', message);
+      if (dupeTime != 0) queryBuilder.andWhere('timestamp', '>', timeDiff);
+      if (dupeLimit != 0) queryBuilder.orderBy('id', 'desc').limit(dupeLimit);
+    });
+  if (dupRows.length > 0 && filterDupes) {
+    logger.main.info(util.format('Ignoring duplicate: %o', message));
+    return { status: 'duplicate' };
+  }
+
+  const capResult = await (dbtype === 'oracledb'
+    ? db.from('capcodes').select('id', 'ignore')
+        .whereRaw('? LIKE "address"', [address])
+        .orderByRaw(`REPLACE("address", '_', '%') DESC`)
+        .then(function (rows) { return rows.length > 0 ? rows[0] : null; })
+    : lookupCapcode(address));
+
+  let insert = true;
+  let alias_id = null;
+  if (capResult !== null) {
+    if (capResult.ignore == 1) {
+      insert = false;
+      logger.main.info('Ignoring filtered address: ' + address + ' alias: ' + capResult.id);
+    } else {
+      alias_id = capResult.id;
+    }
+  }
+  // overwrite alias_id if set from plugin
+  if (data.pluginData.aliasId) alias_id = data.pluginData.aliasId;
+
+  if (insert !== true) return { status: 'filtered' };
+
+  const insertmsg = { address, message, timestamp, source, alias_id };
+  if (groupId) insertmsg.group_id = groupId;
+  const insertResult = await db('messages').insert(insertmsg);
+  const msgId = Object.keys(insertResult[0]).includes('id') ? insertResult[0].id : insertResult[0];
+
+  if (dbtype == 'oracledb') {
+    // oracle requires update of search index after insert, can't be trigger for some reason
+    try {
+      const resp = await db.raw(`BEGIN CTX_DDL.SYNC_INDEX('search_idx'); END;`);
+      logger.main.debug('search_idx sync complete');
+      logger.main.debug(resp);
+    } catch (err) {
+      logger.main.error('search_idx sync failed');
+      logger.main.error(err);
+    }
+  }
+
+  const rows = await db.from('messages')
+    .select('messages.*', 'capcodes.alias', 'capcodes.agency', 'capcodes.icon', 'capcodes.color', 'capcodes.ignore', 'capcodes.pluginconf', 'capcodes.onlyShowLoggedIn')
+    .modify(function (queryBuilder) { queryBuilder.leftJoin('capcodes', 'capcodes.id', '=', 'messages.alias_id'); })
+    .where('messages.id', '=', msgId);
+
+  if (rows.length === 0) return { status: 'inserted', msgId, row: null, rowUser: null };
+
+  let row = rows[0];
+  row.pluginData = data.pluginData;
+  // Copy timestamp to datetime for backwards compatibility.
+  row.datetime = row.timestamp;
+  row.pluginconf = row.pluginconf ? parseJSON(row.pluginconf) : {};
+
+  // FLEX-groep: nu autoritatief via group_id. Voor losse berichten (geen group_id)
+  // valt het terug op de legacy heuristiek (routing-capcode 002029xxx op zelfde timestamp+message).
+  if (row.group_id) {
+    row.isFlexGroup = true;
+  } else {
+    try {
+      const [{ cnt }] = await db.from('messages').count('* as cnt')
+        .where('timestamp', '=', row.timestamp)
+        .where('message', '=', row.message)
+        .where('address', 'like', '002029%');
+      row.isFlexGroup = cnt > 0;
+    } catch (e) {
+      row.isFlexGroup = false;
+    }
+  }
+
+  // send data to pluginHandler after processing (response wordt, net als voorheen, niet hergebruikt)
+  logger.main.debug('afterMessage start');
+  await runPlugin('after', row);
+  logger.main.debug('afterMessage done');
+
+  // remove the pluginconf object before firing socket message
+  delete row.pluginconf;
+  const fields = ['id', 'message', 'source', 'timestamp', 'datetime', 'alias_id', 'alias', 'agency', 'icon', 'color', 'ignore', 'isFlexGroup', 'onlyShowLoggedIn', 'group_id'];
+  if (!HideCapcode) fields.push('address'); // Show address, when hideCapcode is off.
+  const rowUser = pick(row, fields);
+
+  return { status: 'inserted', msgId, row, rowUser };
+}
+
+// Stuurt de socket-emit voor één opgeslagen bericht (zelfde rooms/payloads als voorheen).
+function emitInserted(req, row, rowUser) {
+  req.io.to('admin').emit('messagePost', row);
+  req.io.to('user').emit('messagePost', rowUser);
+  if (!row.onlyShowLoggedIn) req.io.to('anonymous').emit('messagePost', rowUser);
+  // Sneakpeek users see all messages (same as API with sneakpeek=1)
+  req.io.to('sneakpeek').emit('messagePost', rowUser);
+}
+
+// Bepaalt of een bericht een push-notificatie waard is (geen hidden, geen FLEX-routing-capcode).
+function isPushEligible(row) {
+  if (row.onlyShowLoggedIn) return false;
+  const addr = parseInt(row.address, 10);
+  const isGroupCapcode = addr >= 2029568 && addr <= 2029583;
+  return !isGroupCapcode;
+}
+
+function pushFor(row) {
+  sendPushNotifications({ message: row.message, timestamp: row.timestamp, alias: row.alias, agency: row.agency });
+}
+
 router.route('/messages')
   .get(authHelper.isLoggedInMessages, function (req, res, next) {
     const cfg = getGetConfig();
@@ -536,7 +724,8 @@ router.route('/messages')
                 "agency": row.agency,
                 "icon": row.icon,
                 "color": row.color,
-                "ignore": row.ignore
+                "ignore": row.ignore,
+                "group_id": row.group_id
               };
             }
           }
@@ -549,232 +738,80 @@ router.route('/messages')
         if (!res.headersSent) res.status(500).json({ error: 'Internal server error' });
       });
   })
-  .post(authHelper.isAdmin, function (req, res, next) {
-    if (req.body.address && req.body.message) {
-      const cfg = getMsgConfig();
-      const filterDupes = cfg.filterDupes;
-      const dupeLimit = cfg.dupeLimit;
-      const dupeTime = cfg.dupeTime;
-      const pdwMode = cfg.pdwMode;
-      const adminShow = cfg.adminShow;
-      let data = req.body;
-      data.pluginData = {};
-      let timestamp;
+  .post(authHelper.isAdmin, async function (req, res, next) {
+    const cfg = getMsgConfig();
 
-      if (filterDupes) {
-        // this is a bad solution and tech debt that will bite us in the ass if we ever go HA, but that's a problem for future me and that guy's a dick
-
-        timestamp = data.timestamp || data.datetime || 1;
-
-        const timeDiff = timestamp - dupeTime;
-        // if duplicate filtering is enabled, we want to populate the message buffer and check for duplicates within the limits
-        const matches = msgBuffer.filter(function(m) { return m.message === data.message && m.address === data.address; });
-        if (matches.length > 0) {
-          if (dupeTime != 0) {
-            // search the matching messages and see if any match the time constrain
-            const timeFind = matches.find(function (msg) { return msg.timestamp > timeDiff; });
-            if (timeFind) {
-              logger.main.info(util.format('Ignoring duplicate: %o', data.message));
-              return res.status(200).send('Ignoring duplicate');
-            }
-          } else {
-            // if no dupeTime then just end the search now, we have matches
-            logger.main.info(util.format('Ignoring duplicate: %o', data.message));
-            return res.status(200).send('Ignoring duplicate');
+    // ── Batch: één FLEX-groepscall (één bericht naar meerdere capcodes) als pakket ──
+    if (Array.isArray(req.body.batch)) {
+      const items = req.body.batch.filter(function (it) { return it && it.address && it.message; });
+      if (items.length === 0) {
+        return res.status(400).json({ message: 'Error - batch contains no valid messages' });
+      }
+      // group_id alleen bij een echte groep (>1 capcode); een batch van 1 blijft een los bericht
+      const groupId = items.length > 1 ? crypto.randomUUID() : null;
+      {
+        const results = [];
+        let errorCount = 0;
+        // Sequentieel verwerken: de in-memory dupe-buffer en dedup-query zijn niet thread-safe.
+        // Per-item afgevangen zodat één fout-item de rest van de batch niet meesleurt.
+        for (const item of items) {
+          try {
+            results.push(await processIncomingMessage(item, cfg, groupId));
+          } catch (err) {
+            logger.main.error(err);
+            errorCount++;
+            results.push({ status: 'error' });
           }
         }
-        // no matches, maintain the array
-        let dupeArrayLimit = dupeLimit;
-        if (dupeArrayLimit == 0) {
-          dupeArrayLimit = 25; // should provide sufficient buffer, consider increasing if duplicates appear when users have no dupeLimit
+        const inserted = results.filter(function (r) { return r.status === 'inserted' && r.row; });
+        // Niets opgeslagen én er waren fouten (bv. DB tijdelijk weg): 500 zodat de client
+        // de hele batch opnieuw stuurt. Omdat er niets is ingevoegd, levert dat geen dubbele
+        // berichten op. Bij gedeeltelijk succes geven we 200 terug om mass-duplicatie te vermijden.
+        if (inserted.length === 0 && errorCount > 0) {
+          return res.status(500).json({ error: 'Internal server error' });
         }
-        if (msgBuffer.length > dupeArrayLimit) {
-          msgBuffer.shift();
+        if (inserted.length > 0) {
+          if (groupId) {
+            // Echte groep: één messageGroup-emit met de hele set i.p.v. losse messagePost-events.
+            req.io.to('admin').emit('messageGroup', { groupId, messages: inserted.map(function (r) { return r.row; }) });
+            req.io.to('user').emit('messageGroup', { groupId, messages: inserted.map(function (r) { return r.rowUser; }) });
+            const anon = inserted.filter(function (r) { return !r.row.onlyShowLoggedIn; });
+            if (anon.length > 0) req.io.to('anonymous').emit('messageGroup', { groupId, messages: anon.map(function (r) { return r.rowUser; }) });
+            req.io.to('sneakpeek').emit('messageGroup', { groupId, messages: inserted.map(function (r) { return r.rowUser; }) });
+            // Eén push voor de hele groep i.p.v. per capcode.
+            const pushRow = inserted.map(function (r) { return r.row; }).find(isPushEligible);
+            if (pushRow) pushFor(pushRow);
+          } else {
+            // Batch zonder echte groep (1 overgebleven bericht): als los bericht emitten.
+            inserted.forEach(function (r) { emitInserted(req, r.row, r.rowUser); });
+            const pushRow = inserted.map(function (r) { return r.row; }).find(isPushEligible);
+            if (pushRow) pushFor(pushRow);
+          }
         }
-        msgBuffer.push(pick(data,['message', 'timestamp', 'address']));
+        const ids = results.map(function (r) { return r.status === 'inserted' ? r.msgId : r.status; });
+        return res.status(200).json({ ids, groupId });
       }
-
-        if (data.timestamp)
-          timestamp = data.timestamp;
-        else if (data.datetime) {
-          logger.main.warn(`An incoming message from ${data.source || 'an unknown source' } contains the timestamp as field 'datetime'. Update the message source to use the variable 'timestamp' instead!`);
-          timestamp = data.datetime;
-        } else
-          timestamp = 1;
-
-        // Ensure timestamp is always stored as an integer (Unix seconds)
-        timestamp = parseInt(timestamp, 10);
-        if (!Number.isFinite(timestamp) || timestamp <= 0) timestamp = Math.floor(Date.now() / 1000);
-
-      // send data to pluginHandler before proceeding
-      logger.main.debug('beforeMessage start');
-      pluginHandler.handle('message', 'before', data, function (response) {
-        logger.main.debug(util.format('%o', response));
-        logger.main.debug('beforeMessage done');
-        if (response && response.pluginData) {
-          // only set data to the response if it's non-empty and still contains the pluginData object
-          data = response;
-        }
-        if (data.pluginData.ignore) {
-          // stop processing
-          return res.status(200).send('Ignoring filtered');
-        }
-        const address = data.address || '0000000';
-        const message = data.message || 'null';
-        const timeDiff = timestamp - dupeTime;
-        const source = data.source || 'UNK';
-        db.from('messages')
-          .select('id')
-          .modify(function (queryBuilder) {
-            queryBuilder.where('address', '=', address)
-              .andWhere('message', '=', message);
-            if (dupeTime != 0) {
-              queryBuilder.andWhere('timestamp', '>', timeDiff);
-            }
-            if (dupeLimit != 0) {
-              queryBuilder.orderBy('id', 'desc').limit(dupeLimit);
-            }
-          })
-          .then((row) => {
-            if (row.length > 0 && filterDupes) {
-              logger.main.info(util.format('Ignoring duplicate: %o', message));
-              res.status(200).send('Ignoring duplicate');
-            } else {
-              (dbtype === 'oracledb'
-                ? db.from('capcodes').select('id', 'ignore')
-                    .whereRaw('? LIKE "address"', [address])
-                    .orderByRaw(`REPLACE("address", '_', '%') DESC`)
-                    .then(function(rows) { return rows.length > 0 ? rows[0] : null; })
-                : lookupCapcode(address)
-              ).then((capResult) => {
-                  let insert;
-                  let alias_id = null;
-                  if (capResult !== null) {
-                    if (capResult.ignore == 1) {
-                      insert = false;
-                      logger.main.info('Ignoring filtered address: ' + address + ' alias: ' + capResult.id);
-                    } else {
-                      insert = true;
-                      alias_id = capResult.id;
-                    }
-                  } else {
-                    insert = true;
-                  }
-
-                  // overwrite alias_id if set from plugin
-                  if (data.pluginData.aliasId) {
-                    alias_id = data.pluginData.aliasId;
-                  }
-
-                  if (insert === true) {
-                    const insertmsg = { address, message, timestamp, source, alias_id }
-                    db('messages').insert(insertmsg)
-                      .then((result) => {
-                        // emit the full message
-                        const msgId = Object.keys(result[0]).includes('id') ? result[0].id : result[0];
-
-                        if (dbtype == 'oracledb') {
-                          // oracle requires update of search index after insert, can't be trigger for some reason
-                          db.raw(`BEGIN CTX_DDL.SYNC_INDEX('search_idx'); END;`)
-                            .then((resp) => {
-                              logger.main.debug('search_idx sync complete');
-                              logger.main.debug(resp);
-                            }).catch((err) => {
-                              logger.main.error('search_idx sync failed');
-                              logger.main.error(err)
-                            });
-                        }
-
-                        db.from('messages')
-                          .select('messages.*', 'capcodes.alias', 'capcodes.agency', 'capcodes.icon', 'capcodes.color', 'capcodes.ignore', 'capcodes.pluginconf', 'capcodes.onlyShowLoggedIn')
-                          .modify(function (queryBuilder) {
-                            queryBuilder.leftJoin('capcodes', 'capcodes.id', '=', 'messages.alias_id')
-                          })
-                          .where('messages.id', '=', msgId)
-                          .then((row) => {
-                            if (row.length > 0) {
-                              row = row[0]
-                              // send data to pluginHandler after processing
-                              row.pluginData = data.pluginData;
-
-                              // Copy timestamp to datetime for backwards compatibility.
-                              row.datetime = row.timestamp;
-
-                              if (row.pluginconf) {
-                                row.pluginconf = parseJSON(row.pluginconf);
-                              } else {
-                                row.pluginconf = {};
-                              }
-                              // Check if this message is part of a FLEX group (routing capcode 002029xxx present)
-                              db.from('messages')
-                                .count('* as cnt')
-                                .where('timestamp', '=', row.timestamp)
-                                .where('message', '=', row.message)
-                                .where('address', 'like', '002029%')
-                                .then(([{ cnt }]) => { row.isFlexGroup = cnt > 0; })
-                                .catch(() => { row.isFlexGroup = false; })
-                                .finally(() => {
-                              logger.main.debug('afterMessage start');
-                              pluginHandler.handle('message', 'after', row, function (response) {
-                                logger.main.debug(util.format('%o', response));
-                                logger.main.debug('afterMessage done');
-                                // remove the pluginconf object before firing socket message
-                                delete row.pluginconf;
-                                const fields = ['id','message','source','timestamp','datetime','alias_id','alias','agency','icon','color','ignore','isFlexGroup','onlyShowLoggedIn']
-                                if (!HideCapcode) fields.push('address') // Show address, when hideCapcode is off.
-                                const rowUser = pick(row, fields)
-
-                                req.io.to('admin').emit('messagePost',row);
-                                req.io.to('user').emit('messagePost',rowUser);
-                                if(!row.onlyShowLoggedIn) req.io.to('anonymous').emit('messagePost',rowUser);
-                                // Sneakpeek users see all messages (same as API with sneakpeek=1)
-                                req.io.to('sneakpeek').emit('messagePost',rowUser);
-
-                                // Stuur push-notificatie naar geabonneerde browsers
-                                // We sturen bericht, timestamp en labels mee zodat we labels uit de tekst kunnen filteren
-                                var _addr = parseInt(row.address, 10);
-                                var _isGroupCapcode = _addr >= 2029568 && _addr <= 2029583;
-                                if (!row.onlyShowLoggedIn && !_isGroupCapcode) {
-                                  sendPushNotifications({
-                                    message: row.message,
-                                    timestamp: row.timestamp,
-                                    alias: row.alias,
-                                    agency: row.agency
-                                  });
-                                }
-
-                              });
-                                }); // end isFlexGroup finally
-                            }
-                            res.status(200).send('' + msgId);
-                          })
-                          .catch((err) => {
-                            res.status(500).json({ error: 'Internal server error' });
-                            logger.main.error(err)
-                          })
-                      })
-                      .catch((err) => {
-                        res.status(500).json({ error: 'Internal server error' });
-                        logger.main.error(err)
-                      })
-                  } else {
-                    res.status(200).send('Ignoring filtered');
-                  }
-                })
-                .catch((err) => {
-                  res.status(500).json({ error: 'Internal server error' });
-                  logger.main.error(err)
-                })
-            }
-          })
-          .catch((err) => {
-            res.status(500).json({ error: 'Internal server error' });
-            logger.main.error(err)
-          })
-      })
-    } else {
-      res.status(400).json({ message: 'Error - address or message missing' });
     }
+
+    // ── Los bericht (backward compatible) ──
+    if (req.body.address && req.body.message) {
+      try {
+        const result = await processIncomingMessage(req.body, cfg, null);
+        if (result.status === 'duplicate') return res.status(200).send('Ignoring duplicate');
+        if (result.status === 'filtered') return res.status(200).send('Ignoring filtered');
+        if (result.row) {
+          emitInserted(req, result.row, result.rowUser);
+          if (isPushEligible(result.row)) pushFor(result.row);
+        }
+        return res.status(200).send('' + result.msgId);
+      } catch (err) {
+        logger.main.error(err);
+        if (!res.headersSent) return res.status(500).json({ error: 'Internal server error' });
+      }
+      return;
+    }
+
+    res.status(400).json({ message: 'Error - address or message missing' });
   });
 
 
