@@ -22,6 +22,9 @@ server/config/vacuum_state.json
 server/knex/seeds/
 server/knex/migrations/*.bak
 
+# Sessions (SQLite session store — contains active session tokens)
+server/sessions
+
 # OS & IDE
 .vscode/
 .idea/

@@ -1,7 +1,7 @@
 {
   "global": {
     "loglevel": "debug",
-    "sessionSecret": "1DVETLX8VE007RYQN9TN9Z00",
+    "sessionSecret": "CHANGE_THIS_TO_A_RANDOM_SECRET",
     "frontPopupEnable": false,
     "frontPopupTitle": "",
     "frontPopupContent": "",
@@ -44,7 +44,7 @@
   "auth": {
     "registration": false,
     "user": "admin",
-    "encPass": "$2a$08$De/aXnQkZIEbQ9p8J22tHuzLltqIbsAxE2CGgRMPLaaIwwHmVrpsu",
+    "encPass": "$2a$08$REPLACETHISWITHYOUROWNBCRYPTHASH_________________",
     "keys": [
       {
         "name": "example1",
