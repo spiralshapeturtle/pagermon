@@ -1,5 +1,6 @@
 // PagerMon - reader.js
 // Modernized version
+// Original authors: Dave McKenzie and PagerMon contributors
 
 import fs from 'node:fs/promises';
 import { createInterface } from 'node:readline';
@@ -19,15 +20,23 @@ const DEFAULT_CONFIG = {
 
 const FRAGMENT_TTL_MS = 10 * 1000; // F→C always within 2s; 10s is safe margin
 
+// Dutch P2000 FLEX group capcode range (used as fallback key for F+C address mismatch)
+const GROUP_CAP_MIN = 2029568;
+const GROUP_CAP_MAX = 2029583;
+
 class PagerMonReader {
   #config;
   #uri;
   #fragments = new Map();
 
   constructor() {
+    // stdin is in productie een pipe (rtl_fm | multimon-ng | node reader_modern.js),
+    // geen TTY. terminal:false laat readline puur regel-voor-regel lezen i.p.v. de
+    // datastroom als terminal-toetsaanslagen te interpreteren en escape-sequences naar
+    // stdout te schrijven.
     this.readline = createInterface({
       input: process.stdin,
-      terminal: true
+      terminal: false
     });
     this.readline.pause(); // hold input until config is loaded
   }
@@ -152,7 +161,7 @@ class PagerMonReader {
     // --- F: First fragment — store per capcode, wait for continuation ---
     if (fragFlag === 'F') {
       for (const addr of addresses) {
-        this.#fragments.set(addr, { message: rawMessage, _addedAt: Date.now() });
+        this.#fragments.set(addr, { message: rawMessage, _addedAt: Date.now(), fAddresses: addresses });
       }
       console.log(chalk.cyan(`[${lineObj.time}] PAGERMON: [FRAG F] ${addresses.join(' ')} | wacht op vervolg...`));
       return [];
@@ -160,25 +169,48 @@ class PagerMonReader {
 
     // --- C: Terminal fragment — combine with prior F if available, send immediately ---
     if (fragFlag === 'C') {
-      let storedMessage = null;
+      let storedEntry = null;
+
+      // Primary: match by C-frame address (normal case: F and C share same addresses)
       for (const addr of addresses) {
         const entry = this.#fragments.get(addr);
-        if (entry) { storedMessage = entry.message; break; }
+        if (entry) { storedEntry = entry; break; }
       }
-      let finalMessage;
-      if (storedMessage !== null) {
-        finalMessage = storedMessage + rawMessage;
-        for (const addr of addresses) {
-          this.#fragments.delete(addr);
+
+      // Fallback: F frame had only a group capcode, C frame has only subscriber capcodes
+      if (!storedEntry) {
+        let bestEntry = null;
+        for (const [, entry] of this.#fragments) {
+          const isGroup = entry.fAddresses && entry.fAddresses.some(a => this.#isGroupCapcode(a));
+          if (isGroup && (!bestEntry || entry._addedAt > bestEntry._addedAt)) {
+            bestEntry = entry;
+          }
         }
-        console.log(chalk.cyan(`[${lineObj.time}] PAGERMON: [FRAG C] ${addresses.join(' ')} | vervolg ontvangen`));
+        if (bestEntry) {
+          storedEntry = bestEntry;
+          console.log(chalk.cyan(`[${lineObj.time}] PAGERMON: [FRAG C] groepscode-fallback gebruikt`));
+        }
+      }
+
+      let finalMessage;
+      let allAddresses;
+
+      if (storedEntry !== null) {
+        finalMessage = storedEntry.message + rawMessage;
+        // Merge F-frame addresses with C-frame addresses (deduplicated, group code first)
+        const fAddrs = storedEntry.fAddresses || [];
+        allAddresses = [...new Set([...fAddrs, ...addresses])];
+        for (const addr of allAddresses) this.#fragments.delete(addr);
+        console.log(chalk.cyan(`[${lineObj.time}] PAGERMON: [FRAG C] ${allAddresses.join(' ')} | vervolg ontvangen`));
       } else {
         finalMessage = rawMessage;
+        allAddresses = addresses;
         console.log(chalk.cyan(`[${lineObj.time}] PAGERMON: [FRAG C orphan] ${addresses.join(' ')} | ${finalMessage}`));
       }
-      if (addresses.length > 1) tempMessage.groupedMessage = true;
+
+      if (allAddresses.length > 1) tempMessage.groupedMessage = true;
       tempMessage.wasFragmented = true;
-      return addresses.map(address => ({
+      return allAddresses.map(address => ({
         ...tempMessage,
         address: this.padAddress(address),
         message: finalMessage
@@ -203,6 +235,11 @@ class PagerMonReader {
         this.#fragments.delete(key);
       }
     }
+  }
+
+  #isGroupCapcode(addr) {
+    const n = parseInt(addr, 10);
+    return !isNaN(n) && n >= GROUP_CAP_MIN && n <= GROUP_CAP_MAX;
   }
 
   extractPocsagMessage(lineObj, message) {
@@ -260,15 +297,21 @@ class PagerMonReader {
       const suffix = tags.length ? ` - ${tags.join(' ')}` : '';
       console.log(chalk.green(`[${first.time}] PAGERMON: ${addresses} | ${first.message}${suffix}`));
     }
+    // Ongeldige regels apart loggen (geen address/message).
     for (const message of messages) {
-      if (message.address.length > 2 && message.message) {
-        await this.sendMessage({
-          ...message,
-          source: this.#config.identifier
-        });
-      } else {
+      if (!(message.address.length > 2 && message.message)) {
         console.log(chalk.red(`${message.time}: `) + chalk.gray(lineObj.line));
       }
+    }
+    if (valid.length === 0) return;
+
+    const payloads = valid.map(m => ({ ...m, source: this.#config.identifier }));
+    if (payloads.length > 1) {
+      // Eén FLEX-groepscall (meerdere capcodes, zelfde bericht) als één batch-POST.
+      await this.sendMessage({ batch: payloads });
+    } else {
+      // Los bericht: ongewijzigd formaat (backward compatible).
+      await this.sendMessage(payloads[0]);
     }
   }
 
