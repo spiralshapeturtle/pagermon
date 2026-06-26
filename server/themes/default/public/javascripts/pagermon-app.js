@@ -454,15 +454,27 @@
         this._socket = io({ transports: ['websocket'] });
         // Sync the sneakpeek room once connected (covers reconnects and the race
         // where the toggle is flipped before the socket finishes connecting).
+        // On reconnect, fetch fresh data so messages missed during disconnect are shown.
         this._socket.on('connect', () => {
           if (this.sneakpeek) this._socket.emit('setSneakpeek', true);
+          if (this._socketWasConnected) this.updateData();
+          this._socketWasConnected = true;
+        });
+
+        // Refresh when the tab becomes visible again after being in the background.
+        // Browsers throttle/suspend inactive tabs, causing missed socket messages.
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') this.updateData();
         });
         this._socket.on('messagePost', m => {
           m.date = Utils.fmtDate(m.timestamp); m.time = Utils.fmtTime(m.timestamp);
-          // Real-time grouping logic
-          const existing = this.messages.find(ex => ex.timestamp === m.timestamp && ex.message === m.message);
+          // Real-time grouping: only merge into an existing card when this message
+          // is part of a real FLEX group (group_id set) or the server flagged it as
+          // one (isFlexGroup). Bare ALPHA messages that happen to share a timestamp
+          // and text are NOT groups and must each get their own row.
+          const isGroup = !!(m.group_id || m.isFlexGroup);
+          const existing = isGroup && this.messages.find(ex => ex.timestamp === m.timestamp && ex.message === m.message);
           if (existing) {
-            // Add capcode to existing group if not already there
             if (!existing.capcodes.find(c => c.id === m.id)) {
               existing.capcodes.push(m);
             }

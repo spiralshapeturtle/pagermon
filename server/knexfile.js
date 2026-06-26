@@ -49,11 +49,11 @@ if(process.env.NODE_ENV === 'test') {
         if (err) return cb(err);
         conn.run('PRAGMA synchronous = OFF', function(err) {   // no fsync — UPS protects us
           if (err) return cb(err);
-          conn.run('PRAGMA cache_size = -524288', function(err) { // 512MB cache
+          conn.run('PRAGMA cache_size = -65536', function(err) { // 64MB cache (past bij 90d DB ~180MB)
             if (err) return cb(err);
             conn.run('PRAGMA temp_store = MEMORY', function(err) { // temp B-trees in RAM
               if (err) return cb(err);
-              conn.run('PRAGMA mmap_size = 2147483648', function(err) { // 2GB mmap reads
+              conn.run('PRAGMA mmap_size = 268435456', function(err) { // 256MB mmap (ruim voor 180MB DB)
                 if (err) return cb(err);
                 conn.run('PRAGMA wal_autocheckpoint = 4000', function(err) { // checkpoint bij ~16MB WAL (4000 × 4KB pages)
                   if (err) return cb(err);

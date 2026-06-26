@@ -701,18 +701,20 @@ html.light-theme #pdw-toggle-li.pdw-on > a { color: var(--accent-red) !important
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  padding: 2px 5px;
+  padding: 2px 6px;
   border-radius: 10px;
   font-size: 11px;
+  font-weight: 600;
   line-height: 1;
   white-space: nowrap;
   text-decoration: none;
   max-width: 100%;
   overflow: hidden;
+  opacity: 0.92;
   /* text color is set dynamically via badgeTextColor() */
 }
 a.flex-capcode-badge:hover {
-  opacity: 0.8;
+  opacity: 1;
   text-decoration: none;
 }
 
@@ -1112,7 +1114,13 @@ table .expand {
   }
   #content { padding: 0; }
   .messages-card { border-radius: 0 0 6px 6px; }
-  .pagerMessage { font-size: 16px; }
+  /* iOS Safari zooms into inputs with font-size < 16px — keep at exactly 16px to prevent it */
+  .form-control,
+  .form-select,
+  .alias-goto input { font-size: 16px !important; }
+  /* Counteract the header search-form override (font-size: 13px inline rule) */
+  .header-search-form .form-control { font-size: 16px !important; }
+  .pagerMessage { font-size: 15px; font-weight: 500; }
   .flex-capcode-badge { font-size: 11px; }
 }
 

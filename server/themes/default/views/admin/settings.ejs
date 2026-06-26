@@ -91,7 +91,7 @@
             <div class="col-8 col-sm-9">
               <input class="form-control" type="text" x-model="settings.global.frontPopupTitle" :required="settings.global && settings.global.frontPopupEnable">
               <div class="form-text">
-Modal Title</span>
+Modal Title</div>
             </div>
           </div>
             <div class="row mb-3" x-show="settings.global && settings.global.frontPopupEnable">
@@ -99,7 +99,7 @@ Modal Title</span>
             <div class="col-8 col-sm-9">
               <textarea class="form-control" rows="6" x-model="settings.global.frontPopupContent" :required="settings.global && settings.global.frontPopupEnable"></textarea>
               <div class="form-text">
-Modal Content</span>
+Modal Content</div>
             </div>
           </div>
           <div class="row mb-3">
@@ -110,7 +110,7 @@ Modal Content</span>
                   <input type="checkbox" x-model="settings.global.SpecificAliasRefresh">
                   Refresh all messages for a specific Alias, when the Alias is saved.
                   <div class="form-text">
-This mitigates the need for an Alias Refresh every time an alias is saved, but does not effect <strong>_</strong> wildcard alias.</span>
+This mitigates the need for an Alias Refresh every time an alias is saved, but does not effect <strong>_</strong> wildcard alias.</div>
                 </label>
               </div>
             </div>
@@ -132,7 +132,7 @@ This mitigates the need for an Alias Refresh every time an alias is saved, but d
             <div class="col-8 col-sm-9">
               <input type="text" class="form-control" x-model="settings.database.file" :required="settings.database && settings.database.type == 'sqlite3'">
               <div class="form-text">
-Configure the path to the SQLite Database</span>
+Configure the path to the SQLite Database</div>
             </div>
           </div>
           <div class="form-group" x-show="settings.database && settings.database.type == 'oracledb'">
@@ -140,7 +140,7 @@ Configure the path to the SQLite Database</span>
             <div class="col-8 col-sm-9">
               <input type="text" class="form-control" x-model="settings.database.connectString" :required="settings.database && settings.database.type == 'oracledb'">
               <div class="form-text">
-Oracle connection string</span>
+Oracle connection string</div>
             </div>
           </div>
           <div class="form-group" x-show="settings.database && (settings.database.type == 'pg' || settings.database.type == 'mysql' || settings.database.type == 'mysql2' || settings.database.type == 'mssql')">
@@ -148,7 +148,7 @@ Oracle connection string</span>
             <div class="col-8 col-sm-9">
               <input type="text" class="form-control" x-model="settings.database.server">
               <div class="form-text">
-Database Server Address</span>
+Database Server Address</div>
             </div>
           </div>
           <div class="form-group" x-show="settings.database && (settings.database.type == 'pg' || settings.database.type == 'mysql' || settings.database.type == 'mysql2' || settings.database.type == 'mssql')">
@@ -156,7 +156,7 @@ Database Server Address</span>
             <div class="col-8 col-sm-9">
               <input type="text" class="form-control" x-model="settings.database.port">
               <div class="form-text">
-Database Server Port (default is 3306)</span>
+Database Server Port (default is 3306)</div>
             </div>
           </div>
           <div class="form-group" x-show="settings.database && (settings.database.type == 'pg' || settings.database.type == 'mysql' || settings.database.type == 'mysql2' || settings.database.type == 'mssql')">
@@ -164,7 +164,7 @@ Database Server Port (default is 3306)</span>
             <div class="col-8 col-sm-9">
               <input type="text" class="form-control" x-model="settings.database.database">
               <div class="form-text">
-Name of the database.</span>
+Name of the database.</div>
             </div>
           </div>
           <div class="form-group" x-show="settings.database && (settings.database.type == 'pg' || settings.database.type == 'mysql' || settings.database.type == 'mysql2' || settings.database.type == 'mssql' || settings.database.type == 'oracledb')">
@@ -172,7 +172,7 @@ Name of the database.</span>
             <div class="col-8 col-sm-9">
               <input type="text" class="form-control" x-model="settings.database.username">
               <div class="form-text">
-Database Username</span>
+Database Username</div>
             </div>
           </div>
           <div class="form-group" x-show="settings.database && (settings.database.type == 'pg' || settings.database.type == 'mysql' || settings.database.type == 'mysql2' || settings.database.type == 'mssql' || settings.database.type == 'oracledb')">
@@ -185,7 +185,7 @@ Database Username</span>
                 </span>
               </div>
               <div class="form-text">
-Database Password</span>
+Database Password</div>
             </div>
           </div>
           <div class="form-group" x-show="settings.database && (settings.database.type == 'mysql' || settings.database.type == 'mysql2')">
@@ -193,7 +193,7 @@ Database Password</span>
             <div class="col-8 col-sm-9">
               <input type="text" class="form-control" x-model="settings.database.aliasRefreshInterval">
               <div class="form-text">
-<strong>Advanced Users</strong> - The cron timing for Automatic Alias Refresh. See <a href="https://www.npmjs.com/package/node-cron#cron-syntax" target="_blank">Cron Syntax</a>.<br />Default = "0 5,35 * * * *" (The 5th and 35th minute of every hour)</span>
+<strong>Advanced Users</strong> - The cron timing for Automatic Alias Refresh. See <a href="https://www.npmjs.com/package/node-cron#cron-syntax" target="_blank">Cron Syntax</a>.<br />Default = "0 5,35 * * * *" (The 5th and 35th minute of every hour)</div>
             </div>
           </div>
 
@@ -205,7 +205,7 @@ Database Password</span>
                   <input type="checkbox" x-model="settings.messages.rotationEnabled"> Rotate out old messages
                 </label>
                 <div class="form-text">
-Automatically delete messages older than the configured number of days. Runs daily at 01:00.</span>
+Automatically delete messages older than the configured number of days. Runs daily at 01:00.</div>
               </div>
             </div>
           </div>
@@ -214,7 +214,7 @@ Automatically delete messages older than the configured number of days. Runs dai
             <div class="col-8 col-sm-9">
               <input type="number" class="form-control" x-model.number="settings.messages.rotateDays" :disabled="!settings.messages.rotationEnabled" min="1">
               <div class="form-text">
-Delete messages older than <span x-text="settings.messages.rotateDays"></span> days.</span>
+Delete messages older than <span x-text="settings.messages.rotateDays"></span> days.</div>
             </div>
           </div>
           <div class="row mb-3">
@@ -222,7 +222,7 @@ Delete messages older than <span x-text="settings.messages.rotateDays"></span> d
             <div class="col-8 col-sm-9">
               <input type="number" class="form-control" x-model.number="settings.messages.rotateKeep" :disabled="!settings.messages.rotationEnabled" min="0">
               <div class="form-text">
-Always keep at least <span x-text="settings.messages.rotateKeep"></span> of the most recent messages, even if they are older than the rotation interval. Set to 0 to disable.</span>
+Always keep at least <span x-text="settings.messages.rotateKeep"></span> of the most recent messages, even if they are older than the rotation interval. Set to 0 to disable.</div>
             </div>
           </div>
 
@@ -234,7 +234,7 @@ Always keep at least <span x-text="settings.messages.rotateKeep"></span> of the 
                   <input type="checkbox" x-model="settings.messages.vacuumEnabled"> Enable periodic VACUUM
                 </label>
                 <div class="form-text">
-Compacts the database by reclaiming unused space. Only applies to SQLite. Runs during the nightly rotation.</span>
+Compacts the database by reclaiming unused space. Only applies to SQLite. Runs during the nightly rotation.</div>
               </div>
             </div>
           </div>
@@ -243,7 +243,7 @@ Compacts the database by reclaiming unused space. Only applies to SQLite. Runs d
             <div class="col-8 col-sm-9">
               <input type="number" class="form-control" x-model.number="settings.messages.vacuumDays" :disabled="!settings.messages.vacuumEnabled" min="1">
               <div class="form-text">
-Run VACUUM at most once every <span x-text="settings.messages.vacuumDays"></span> days.</span>
+Run VACUUM at most once every <span x-text="settings.messages.vacuumDays"></span> days.</div>
             </div>
           </div>
 
@@ -253,7 +253,7 @@ Run VACUUM at most once every <span x-text="settings.messages.vacuumDays"></span
             <div class="col-8 col-sm-9">
               <input type="number" class="form-control" x-model.number="settings.messages.maxLimit">
               <div class="form-text">
-The maximum number of messages a user can display per page.</span>
+The maximum number of messages a user can display per page.</div>
             </div>
           </div>
           <div class="row mb-3">
@@ -261,7 +261,7 @@ The maximum number of messages a user can display per page.</span>
             <div class="col-8 col-sm-9">
               <input type="number" class="form-control" x-model.number="settings.messages.defaultLimit">
               <div class="form-text">
-Default number of messages to show per page.</span>
+Default number of messages to show per page.</div>
             </div>
           </div>
           <div class="row mb-3">
@@ -272,7 +272,7 @@ Default number of messages to show per page.</span>
                 <option value="normal">Normal</option>
               </select>
               <div class="form-text">
-Set the size of the icons on the message list.</span>
+Set the size of the icons on the message list.</div>
             </div>
           </div>
           <div class="row mb-3">
@@ -283,7 +283,7 @@ Set the size of the icons on the message list.</span>
                   <input type="checkbox" x-model="settings.messages.duplicateFiltering"> Filter out duplicate messages
                 </label>
                 <div class="form-text">
-Limit filtering in one or both of the below fields.</span>
+Limit filtering in one or both of the below fields.</div>
               </div>
             </div>
           </div>
@@ -299,7 +299,7 @@ Limit filtering in one or both of the below fields.</span>
               <input type="number" class="form-control" x-model.number="settings.messages.duplicateTime" :disabled="!settings.messages.duplicateFiltering">
               <div class="form-text">
 Ignore a message if one of the last <span x-text="settings.messages.duplicateLimit"></span> messages in the past <span x-text="settings.messages.duplicateTime"></span> seconds contains the same address and content.
-                <br />Set to 0 or blank to not limit the duplicate check query. This can impact database performance if both this and the above field are blank.</span>
+                <br />Set to 0 or blank to not limit the duplicate check query. This can impact database performance if both this and the above field are blank.</div>
             </div>
           </div>
           <div class="row mb-3">
@@ -368,7 +368,7 @@ Highlights, Labels, or Replaces text/regex match.<br />
                 In <strong>Label</strong> mode, the text is not highlighted, but tooltips are visible when hovering over matched text (if a label is present).<br />
                 In <strong>Highlight</strong> mode, the text is highlighted, and tooltips are visible when hovering over matched text (if a label is present).<br />
                 In <strong>Replace</strong> Mode, the replacement can be text, or a regex replacement consisting of groups (eg: &lt;a href="?q=$1"&gt;$2&lt;/a&gt;)<br />
-                <strong>Note: Reordering rows may help when you have many complex regex replacements.</strong></span>
+                <strong>Note: Reordering rows may help when you have many complex regex replacements.</strong></div>
             </div>
           </div>
           <div class="row mb-3">
@@ -423,7 +423,7 @@ Highlights, Labels, or Replaces text/regex match.<br />
             <label class="col-4 col-sm-3 form-label col-form-label">Alias Templates</label>
             <div class="col-8 col-sm-9">
               <div class="form-text">
-Templates Available when editing/creating an Alias. Use these to speed up alias creation. Filter checkbox automatically checks the "Filter Alias" setting for the Alias</span>
+Templates Available when editing/creating an Alias. Use these to speed up alias creation. Filter checkbox automatically checks the "Filter Alias" setting for the Alias</div>
             </div>
           </div>
           <div class="row mb-3">
@@ -543,7 +543,7 @@ Templates Available when editing/creating an Alias. Use these to speed up alias 
             <div class="col-8 col-sm-9">
               <input class="form-control" type="text" x-model="settings.monitoring.azureKey" :required="settings.monitoring && settings.monitoring.azureEnable">
               <div class="form-text">
-Azure Application Insights Key. See <a href="https://docs.microsoft.com/en-us/azure/azure-monitor/learn/nodejs-quick-start#configure-app-insights-sdk">Documentation</a></span>
+Azure Application Insights Key. See <a href="https://docs.microsoft.com/en-us/azure/azure-monitor/learn/nodejs-quick-start#configure-app-insights-sdk">Documentation</a></div>
             </div>
           </div>
           <div class="row mb-3">
@@ -561,7 +561,7 @@ Azure Application Insights Key. See <a href="https://docs.microsoft.com/en-us/az
             <div class="col-8 col-sm-9">
               <input class="form-control" type="text" x-model="settings.monitoring.gaTrackingCode" :required="settings.monitoring && settings.monitoring.gaEnable">
               <div class="form-text">
-Tracking ID. See <a href="https://support.google.com/analytics/answer/1008080?hl=en">Documentation</a></span>
+Tracking ID. See <a href="https://support.google.com/analytics/answer/1008080?hl=en">Documentation</a></div>
             </div>
           </div>
 
@@ -621,8 +621,8 @@ Tracking ID. See <a href="https://support.google.com/analytics/answer/1008080?hl
       </div>
     </div>
   </div>
-  <script defer src="/vendor/sortablejs/Sortable.min.js?v=local2"></script>
-  <script defer src="/javascripts/admin/admin.js?v=6"></script>
+  <script defer src="/vendor/sortablejs/Sortable.min.js?v=local3"></script>
+  <script defer src="/javascripts/admin/admin.js?v=7"></script>
   <%- include ('../global/footer') -%>
 </body>
 </html>
